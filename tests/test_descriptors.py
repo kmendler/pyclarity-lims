@@ -4,8 +4,9 @@ from unittest import TestCase
 from xml.etree import ElementTree
 
 from genologics.descriptors import StringDescriptor, StringAttributeDescriptor, StringListDescriptor, \
-    StringDictionaryDescriptor, IntegerDescriptor, BooleanDescriptor, UdfDictionary, EntityDescriptor
-from genologics.entities import Artifact
+    StringDictionaryDescriptor, IntegerDescriptor, BooleanDescriptor, UdfDictionary, EntityDescriptor, \
+    InputOutputMapList
+from genologics.entities import Artifact, Process
 from genologics.lims import Lims
 
 if version_info[0] == 2:
@@ -23,6 +24,11 @@ class TestDescriptor(TestCase):
         ElementTree.ElementTree(e).write(outfile, encoding='utf-8', xml_declaration=True)
         return outfile.getvalue()
 
+def print_etree(etree):
+    import sys
+    outfile = BytesIO()
+    ElementTree.ElementTree(etree).write(outfile, encoding='utf-8', xml_declaration=True)
+    sys.stdout.buffer.write(outfile.getvalue())
 
 class TestStringDescriptor(TestDescriptor):
     def setUp(self):
@@ -156,28 +162,46 @@ class TestStringAttributeDescriptor(TestDescriptor):
 
 class TestStringListDescriptor(TestDescriptor):
     def setUp(self):
-        self.et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <test-entry>
 <test-subentry>A01</test-subentry>
 <test-subentry>B01</test-subentry>
 </test-entry>""")
-        self.instance = Mock(root=self.et)
+        self.instance1 = Mock(root=et)
+        et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<test-entry>
+<nesting>
+<test-subentry>A01</test-subentry>
+<test-subentry>B01</test-subentry>
+</nesting>
+</test-entry>""")
+        self.instance2 = Mock(root=et)
 
     def test__get__(self):
         sd = self._make_desc(StringListDescriptor, 'test-subentry')
-        assert sd.__get__(self.instance, None) == ['A01', 'B01']
+        assert sd.__get__(self.instance1, None) == ['A01', 'B01']
+        sd = self._make_desc(StringListDescriptor, 'test-subentry', nesting=['nesting'])
+        assert sd.__get__(self.instance2, None) == ['A01', 'B01']
 
 
 class TestStringDictionaryDescriptor(TestDescriptor):
     def setUp(self):
-        self.et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <test-entry>
 <test-subentry>
 <test-firstkey/>
 <test-secondkey>second value</test-secondkey>
 </test-subentry>
 </test-entry>""")
-        self.instance = Mock(root=self.et)
+        self.instance = Mock(root=et)
+        et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<test-entry>
+<test-subentry>
+<test-firstkey/>
+<test-secondkey>second value</test-secondkey>
+</test-subentry>
+</test-entry>""")
+        self.instance = Mock(root=et)
 
     def test__get__(self):
         sd = self._make_desc(StringDictionaryDescriptor, 'test-subentry')
@@ -189,15 +213,29 @@ class TestStringDictionaryDescriptor(TestDescriptor):
 
 class TestUdfDictionary(TestCase):
     def setUp(self):
-        self.et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <test-entry xmlns:udf="http://genologics.com/ri/userdefined">
 <udf:field type="String" name="test">stuff</udf:field>
 <udf:field type="Numeric" name="how much">42</udf:field>
 <udf:field type="Boolean" name="really?">true</udf:field>
 </test-entry>""")
-        self.instance = Mock(root=self.et)
-        self.dict1 = UdfDictionary(self.instance)
-        self.dict2 = UdfDictionary(self.instance, udt=True)
+        self.instance1 = Mock(root=et)
+        et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<test-entry xmlns:udf="http://genologics.com/ri/userdefined">
+<nesting>
+<udf:field type="String" name="test">stuff</udf:field>
+<udf:field type="Numeric" name="how much">42</udf:field>
+<udf:field type="Boolean" name="really?">true</udf:field>
+</nesting>
+</test-entry>""")
+        self.instance2 = Mock(root=et)
+        self.dict1 = UdfDictionary(self.instance1)
+        self.dict2 = UdfDictionary(self.instance2, nesting=['nesting'])
+        self.dict_fail = UdfDictionary(self.instance2)
+
+        self.empty_et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <test-entry xmlns:udf="http://genologics.com/ri/userdefined">
+        </test-entry>""")
 
     def _get_udf_value(self, udf_dict, key):
         for e in udf_dict._elems:
@@ -222,7 +260,9 @@ class TestUdfDictionary(TestCase):
         pass
 
     def test___getitem__(self):
-        pass
+        assert self.dict1.__getitem__('test') == self._get_udf_value(self.dict1, 'test')
+        assert self.dict2.__getitem__('test') == self._get_udf_value(self.dict2, 'test')
+        self.assertRaises(KeyError, self.dict_fail.__getitem__, 'test')
 
     def test___setitem__(self):
         assert self._get_udf_value(self.dict1, 'test') == 'stuff'
@@ -243,6 +283,10 @@ class TestUdfDictionary(TestCase):
         self.dict1.__setitem__('how much', None)
         assert self._get_udf_value(self.dict1, 'how much') == b'None'
 
+        assert self._get_udf_value(self.dict2, 'test') == 'stuff'
+        self.dict2.__setitem__('test', 'other')
+        assert self._get_udf_value(self.dict2, 'test') == 'other'
+
 
     def test___setitem__new(self):
         self.dict1.__setitem__('new string', 'new stuff')
@@ -254,6 +298,9 @@ class TestUdfDictionary(TestCase):
         self.dict1.__setitem__('new bool', False)
         assert self._get_udf_value(self.dict1, 'new bool') == 'false'
 
+        self.dict2.__setitem__('new string', 'new stuff')
+        assert self._get_udf_value(self.dict2, 'new string') == 'new stuff'
+
 
     def test___setitem__unicode(self):
         assert self._get_udf_value(self.dict1, 'test') == 'stuff'
@@ -262,6 +309,18 @@ class TestUdfDictionary(TestCase):
 
         self.dict1.__setitem__(u'test', 'unicode2')
         assert self._get_udf_value(self.dict1, 'test') == 'unicode2'
+
+    def test_create(self):
+        instance = Mock(root=self.empty_et)
+        dict1 = UdfDictionary(instance)
+        dict1['test'] = 'value1'
+        assert self._get_udf_value(dict1, 'test') == 'value1'
+
+    def test_create_with_nesting(self):
+        instance = Mock(root=self.empty_et)
+        dict1 = UdfDictionary(instance, nesting=['cocoon'])
+        dict1['test'] = 'value1'
+        assert self._get_udf_value(dict1, 'test') == 'value1'
 
     def test___delitem__(self):
         pass
@@ -280,3 +339,26 @@ class TestUdfDictionary(TestCase):
 
     def test_get(self):
         pass
+
+
+
+class TestInputOutputMapList(TestCase):
+    def setUp(self):
+        et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<test-entry xmlns:udf="http://genologics.com/ri/userdefined">
+<input-output-map>
+<input uri="http://testgenologics.com:4040/api/v2/artifacts/1" limsid="1">
+<parent-process uri="http://testgenologics.com:4040//api/v2/processes/1" limsid="1"/>
+</input>
+<output uri="http://testgenologics.com:4040/api/v2/artifacts/2" output-generation-type="PerAllInputs" output-type="ResultFile" limsid="2"/>
+</input-output-map>
+</test-entry>""")
+        self.instance1 = Mock(root=et, lims=Mock(cache={}))
+        self.IO_map = InputOutputMapList()
+
+    def test___get__(self):
+        expected_keys_input  = ['limsid', 'parent-process','uri']
+        expected_keys_ouput  = ['limsid', 'output-type', 'output-generation-type', 'uri']
+        res = self.IO_map.__get__(self.instance1, None)
+        assert sorted(res[0][0].keys()) == sorted(expected_keys_input)
+        assert sorted(res[0][1].keys()) == sorted(expected_keys_ouput)
