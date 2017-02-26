@@ -377,6 +377,7 @@ class UdfDictionaryDescriptor(BaseDescriptor):
     def __set__(self, instance, dict_value):
         instance.get()
         udf_dict = UdfDictionary(instance, nesting=self.nesting, udt=self._UDT)
+        udf_dict.clear()
         for k in dict_value:
             udf_dict[k] = dict_value[k]
 
