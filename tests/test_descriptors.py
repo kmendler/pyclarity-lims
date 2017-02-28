@@ -5,7 +5,7 @@ from xml.etree import ElementTree
 
 from genologics.descriptors import StringDescriptor, StringAttributeDescriptor, StringListDescriptor, \
     StringDictionaryDescriptor, IntegerDescriptor, BooleanDescriptor, UdfDictionary, EntityDescriptor, \
-    InputOutputMapList
+    InputOutputMapList, EntityListDescriptor
 from genologics.entities import Artifact, Process
 from genologics.lims import Lims
 
@@ -135,6 +135,34 @@ class TestEntityDescriptor(TestDescriptor):
         ed = self._make_desc(EntityDescriptor, 'artifact', Artifact)
         ed.__set__(instance_new, self.a1)
         assert instance_new.root.find('artifact').attrib['uri'] == 'http://testgenologics.com:4040/api/v2/artifacts/a1'
+
+class TestEntityListDescriptor(TestDescriptor):
+    def setUp(self):
+        et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<test-entry>
+<artifact uri="http://testgenologics.com:4040/api/v2/artifacts/a1"></artifact>
+<artifact uri="http://testgenologics.com:4040/api/v2/artifacts/a2"></artifact>
+</test-entry>
+""")
+        self.lims = Lims('http://testgenologics.com:4040', username='test', password='password')
+        self.a1 = Artifact(self.lims, id='a1')
+        self.a2 = Artifact(self.lims, id='a2')
+        self.instance1 = Mock(root=et, lims=self.lims)
+        et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<test-entry>
+<nesting>
+<artifact uri="http://testgenologics.com:4040/api/v2/artifacts/a1"></artifact>
+<artifact uri="http://testgenologics.com:4040/api/v2/artifacts/a2"></artifact>
+</nesting>
+</test-entry>
+        """)
+        self.instance2 = Mock(root=et, lims=self.lims)
+
+    def test__get__(self):
+        ed = self._make_desc(EntityListDescriptor, 'artifact', Artifact)
+        assert ed.__get__(self.instance1, None) == [self.a1, self.a2]
+        ed = self._make_desc(EntityListDescriptor, 'artifact', Artifact, nesting=['nesting'])
+        assert ed.__get__(self.instance2, None) == [self.a1, self.a2]
 
 
 class TestStringAttributeDescriptor(TestDescriptor):

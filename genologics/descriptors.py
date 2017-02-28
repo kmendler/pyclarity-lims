@@ -455,7 +455,7 @@ class EntityListDescriptor(Nestable, EntityDescriptor):
     def __get__(self, instance, cls):
         instance.get()
         result = []
-        for node in instance.root.findall(self.tag):
+        for node in get_sub_nodes(self.rootnode(instance), self.tag):
             result.append(self.klass(instance.lims, uri=node.attrib['uri']))
         return result
 
