@@ -5,7 +5,7 @@ from xml.etree import ElementTree
 
 from genologics.descriptors import StringDescriptor, StringAttributeDescriptor, StringListDescriptor, \
     StringDictionaryDescriptor, IntegerDescriptor, BooleanDescriptor, UdfDictionary, EntityDescriptor, \
-    InputOutputMapList, EntityListDescriptor
+    InputOutputMapList, EntityListDescriptor, PlacementDictionary, EntityList
 from genologics.entities import Artifact, Process
 from genologics.lims import Lims
 
@@ -367,6 +367,92 @@ class TestUdfDictionary(TestCase):
 
     def test_get(self):
         pass
+
+
+
+class TestPlacementDictionary(TestCase):
+
+    def setUp(self):
+        et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<test-entry xmlns:udf="http://genologics.com/ri/userdefined">
+<placement uri="http://testgenologics.com:4040/api/v2/artifacts/a1" limsid="a1">
+<value>1:1</value>
+</placement>
+</test-entry>""")
+        self.lims = Lims('http://testgenologics.com:4040', username='test', password='password')
+        self.instance1 = Mock(root=et, lims=self.lims)
+        self.dict1 = PlacementDictionary(self.instance1)
+        self.art1 = Artifact(lims=self.lims, id='a1')
+
+
+    def test___getitem__(self):
+        assert self.dict1.__getitem__('1:1') == self.art1
+
+
+class TestEntityList(TestCase):
+
+    def setUp(self):
+        et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <test-entry>
+    <artifact uri="http://testgenologics.com:4040/api/v2/artifacts/a1"></artifact>
+    <artifact uri="http://testgenologics.com:4040/api/v2/artifacts/a2"></artifact>
+    </test-entry>
+    """)
+        self.lims = Lims('http://testgenologics.com:4040', username='test', password='password')
+        self.a1 = Artifact(self.lims, id='a1')
+        self.a2 = Artifact(self.lims, id='a2')
+        self.instance1 = Mock(root=et, lims=self.lims)
+        et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <test-entry>
+    <nesting>
+    <artifact uri="http://testgenologics.com:4040/api/v2/artifacts/a1"></artifact>
+    <artifact uri="http://testgenologics.com:4040/api/v2/artifacts/a2"></artifact>
+    </nesting>
+    </test-entry>
+            """)
+        self.instance2 = Mock(root=et, lims=self.lims)
+
+    def test__get__(self):
+        el = EntityList(self.instance1, 'artifact', Artifact)
+        assert el[0] == self.a1
+        assert el[1] == self.a2
+        el = EntityList(self.instance2, 'artifact', Artifact, nesting=['nesting'])
+        assert el[0] == self.a1
+        assert el[1] == self.a2
+
+    def test_append(self):
+        el = EntityList(self.instance1, 'artifact', Artifact)
+        assert len(el) == 2
+        assert len(el.instance.root.findall('artifact')) == 2
+        a3 = Artifact(self.lims, id='a3')
+        el.append(a3)
+        assert len(el) == 3
+        assert el[2] == a3
+        assert len(el._elems) == 3
+        assert len(el.instance.root.findall('artifact')) == 3
+
+    def test_insert(self):
+        el = EntityList(self.instance1, 'artifact', Artifact)
+        assert len(el) == 2
+        assert len(el.instance.root.findall('artifact')) == 2
+        a3 = Artifact(self.lims, id='a3')
+        el.insert(1, a3)
+        assert len(el) == 3
+        assert el[1] == a3
+        assert len(el._elems) == 3
+        assert len(el.instance.root.findall('artifact')) == 3
+
+    def test_set(self):
+        el = EntityList(self.instance1, 'artifact', Artifact)
+        assert len(el) == 2
+        assert len(el.instance.root.findall('artifact')) == 2
+        a3 = Artifact(self.lims, id='a3')
+        el[1] = a3
+        assert len(el) == 2
+        assert el[1] == a3
+        assert len(el._elems) == 2
+        assert el.instance.root.findall('artifact')[1].attrib['uri'] == 'http://testgenologics.com:4040/api/v2/artifacts/a3'
+
 
 
 

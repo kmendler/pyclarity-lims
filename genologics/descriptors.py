@@ -31,16 +31,14 @@ def get_sub_nodes(node, subnode_name):
             yield n
 
 
-class BaseDescriptor(object):
-    "Abstract base descriptor for an instance attribute."
 
-    def __get__(self, instance, cls):
-        raise NotImplementedError
+class XmlElement(object):
+    """Abstract class providing functionality to access the root node of an instance"""
+    def rootnode(self, instance):
+        return instance.root
 
-
-class Nestable():
-    "Abstract base descriptor allowing the descriptor to be nested."
-
+class Nestable(XmlElement):
+    "Abstract base XML parser allowing the descriptor to be nested."
     def __init__(self, nesting):
         if nesting:
             self.rootkeys = nesting
@@ -57,131 +55,150 @@ class Nestable():
             _rootnode = childnode
         return _rootnode
 
+class XmlMutable(XmlElement):
+    """Class that receive the an instance so it can be mutated in place"""
+    def __init__(self, instance):
+        self.instance = instance
 
-class TagDescriptor(BaseDescriptor):
-    """Abstract base descriptor for an instance attribute
-    represented by an XML element.
-    """
 
-    def __init__(self, tag):
+class XmlDictionary(XmlMutable, dict):
+    """Class that behave like a dictionary and modify the provided instance as the dictionary gets updated"""
+    def __init__(self, instance, *args, **kwargs):
+        dict.__init__(self, *args, **kwargs)
+        XmlMutable.__init__(self, instance)
+        self._update_elems()
+        self._prepare_lookup()
+
+    def __setitem__(self, key, value):
+        dict.__setitem__(self, key, value)
+        self._setitem(key, value)
+
+    def __delitem__(self, key):
+        dict.__delitem__(self, key)
+        self._del_item(key)
+        for node in self._elems:
+            if node.attrib['name'] == key:
+                self.rootnode(self.instance).remove(node)
+                break
+
+    def _prepare_lookup(self):
+        for elem in self._elems:
+            self._parse_element(elem)
+
+    def clear(self):
+        dict.clear(self)
+        for elem in self._elems:
+            self.rootnode(self.instance).remove(elem)
+        self._update_elems()
+
+    def _update_elems(self):
+        raise NotImplementedError
+
+    def _setitem(self, key, value):
+        raise NotImplementedError
+
+    def _delitem(self, key):
+        raise NotImplementedError
+
+    def _parse_element(self, element):
+        raise NotImplementedError
+
+
+class XmlList(XmlMutable, list):
+    """Class that behave like a list and modify the provided instance as the list gets updated"""
+    def __init__(self, instance, *args, **kwargs):
+        XmlMutable.__init__(self, instance=instance)
+        list.__init__(self, *args, **kwargs)
+        self._update_elems()
+        self._prepare_list()
+
+    def _prepare_list(self):
+        for elem in self._elems:
+            self._parse_element(elem, lims=self.instance.lims)
+
+    def clear(self):
+        dict.clear(self)
+        for elem in self._elems:
+            self.rootnode(self.instance).remove(elem)
+        self._update_elems()
+
+    def __add__(self, other_list):
+        for item in other_list:
+            self._additem(item)
+        self._update_elems()
+        return list.__add__(self, other_list)
+
+    def __iadd__(self, other_list):
+        for item in other_list:
+            self._additem(item)
+        self._update_elems()
+        return list.__iadd__(self, other_list)
+
+    def __setitem__(self, i, item):
+        if isinstance(i, slice):
+            for k, v in zip(i, item):
+                self._setitem(k, v)
+        else:
+            self._setitem(i, item)
+        self._update_elems()
+        return list.__setitem__(self, i, item)
+
+    def insert(self, i, item):
+        self._insertitem(i, item)
+        self._update_elems()
+        return list.insert(self, i, item)
+
+    def append(self, item):
+        self._additem(item)
+        self._update_elems()
+        return list.append(self, item)
+
+    def extend(self, iterable):
+        for v in iterable:
+            self._additem(v)
+        self._update_elems()
+        return list.extend(self, iterable)
+
+    def _additem(self, value):
+        node = self._create_new_node(value)
+        self.rootnode(self.instance).append(node)
+
+    def _insertitem(self, index, value):
+        node = self._create_new_node(value)
+        self.rootnode(self.instance).insert(index, node)
+
+    def _setitem(self, index, value):
+        node = self._create_new_node(value)
+        # Remove the old value in the xml
+        self._delitem(index)
+        # Insert it in place
+        self.rootnode(self.instance).insert(index, node)
+
+    def _delitem(self, index):
+        # Remove the value in the xml and update the cached _elems
+        self.rootnode(self.instance).remove(self._elems[index])
+
+    def _update_elems(self):
+        raise NotImplementedError
+
+    def _parse_element(self, element, **kwargs):
+        raise NotImplementedError
+
+    def _create_new_node(self, value):
+        raise NotImplementedError
+
+class TagXmlList(XmlList):
+    def __init__(self, instance, tag, *args, **kwargs):
         self.tag = tag
+        XmlList.__init__(self, instance=instance, *args, **kwargs)
 
-    def get_node(self, instance):
-        if self.tag:
-            return get_sub_node(instance.root, self.tag)
-        else:
-            return instance.root
+    def _update_elems(self):
+        self._elems = []
+        for elem in self.rootnode(self.instance):
+            if elem.tag == self.tag:
+                self._elems.append(elem)
 
-
-class StringDescriptor(TagDescriptor):
-    """An instance attribute containing a string value
-    represented by an XML element.
-    """
-
-    def __get__(self, instance, cls):
-        instance.get()
-        node = self.get_node(instance)
-        if node is None:
-            return None
-        else:
-            return node.text
-
-    def __set__(self, instance, value):
-        instance.get()
-        node = self.get_node(instance)
-        if node is None:
-            # create the new tag
-            node = ElementTree.Element(self.tag)
-            instance.root.append(node)
-        node.text = str(value)
-
-
-class StringAttributeDescriptor(TagDescriptor):
-    """An instance attribute containing a string value
-    represented by an XML attribute.
-    """
-
-    def __get__(self, instance, cls):
-        instance.get()
-        return instance.root.attrib[self.tag]
-
-    def __set__(self, instance, value):
-        instance.get()
-        instance.root.attrib[self.tag] = value
-
-
-class StringListDescriptor(Nestable, TagDescriptor):
-    """An instance attribute containing a list of strings
-    represented by multiple XML elements.
-    """
-    def __init__(self, tag, nesting=None):
-        Nestable.__init__(self, nesting)
-        TagDescriptor.__init__(self, tag)
-
-    def __get__(self, instance, cls):
-        instance.get()
-        result = []
-        for node in self.rootnode(instance):
-            if node.tag == self.tag:
-                result.append(node.text)
-        return result
-
-
-class StringDictionaryDescriptor(Nestable, TagDescriptor):
-    """An instance attribute containing a dictionary of string key/values
-    represented by a hierarchical XML element.
-    """
-
-    def __init__(self, tag, nesting=None):
-        Nestable.__init__(self, nesting)
-        TagDescriptor.__init__(self, tag)
-
-    def __get__(self, instance, cls):
-        instance.get()
-        result = dict()
-        node = get_sub_node(self.rootnode(instance), self.tag)
-        if node is not None:
-            for node2 in node.getchildren():
-                result[node2.tag] = node2.text
-        return result
-
-
-class IntegerDescriptor(StringDescriptor):
-    """An instance attribute containing an integer value
-    represented by an XMl element.
-    """
-
-    def __get__(self, instance, cls):
-        text = super(IntegerDescriptor, self).__get__(instance, cls)
-        if text is not None:
-            return int(text)
-
-
-class IntegerAttributeDescriptor(TagDescriptor):
-    """An instance attribute containing a integer value
-    represented by an XML attribute.
-    """
-
-    def __get__(self, instance, cls):
-        instance.get()
-        return int(instance.root.attrib[self.tag])
-
-
-class BooleanDescriptor(StringDescriptor):
-    """An instance attribute containing a boolean value
-    represented by an XMl element.
-    """
-
-    def __get__(self, instance, cls):
-        text = super(BooleanDescriptor, self).__get__(instance, cls)
-        if text is not None:
-            return text.lower() == 'true'
-
-    def __set__(self, instance, value):
-        super(BooleanDescriptor, self).__set__(instance, str(value).lower())
-
-
-class UdfDictionary(Nestable):
+class UdfDictionary(Nestable, XmlDictionary):
     "Dictionary-like container of UDFs, optionally within a UDT."
 
     def _is_string(self, value):
@@ -192,11 +209,8 @@ class UdfDictionary(Nestable):
 
     def __init__(self, instance, nesting=None, **kwargs):
         Nestable.__init__(self, nesting)
-        self.instance = instance
         self._udt = kwargs.pop('udt', False)
-        self._update_elems()
-        self._prepare_lookup()
-        self.location = 0
+        XmlDictionary.__init__(self, instance)
 
     def get_udt(self):
         if self._udt == True:
@@ -228,36 +242,23 @@ class UdfDictionary(Nestable):
                 if elem.tag == tag:
                     self._elems.append(elem)
 
-    def _prepare_lookup(self):
-        self._lookup = dict()
-        for elem in self._elems:
-            type = elem.attrib['type'].lower()
-            value = elem.text
-            if not value:
-                value = None
-            elif type == 'numeric':
-                try:
-                    value = int(value)
-                except ValueError:
-                    value = float(value)
-            elif type == 'boolean':
-                value = value == 'true'
-            elif type == 'date':
-                value = datetime.date(*time.strptime(value, "%Y-%m-%d")[:3])
-            self._lookup[elem.attrib['name']] = value
+    def _parse_element(self, element, **kwargs):
+        type = element.attrib['type'].lower()
+        value = element.text
+        if not value:
+            value = None
+        elif type == 'numeric':
+            try:
+                value = int(value)
+            except ValueError:
+                value = float(value)
+        elif type == 'boolean':
+            value = value == 'true'
+        elif type == 'date':
+            value = datetime.date(*time.strptime(value, "%Y-%m-%d")[:3])
+        dict.__setitem__(self, element.attrib['name'], value)
 
-    def __contains__(self, key):
-        try:
-            self._lookup[key]
-        except KeyError:
-            return False
-        return True
-
-    def __getitem__(self, key):
-        return self._lookup[key]
-
-    def __setitem__(self, key, value):
-        self._lookup[key] = value
+    def _setitem(self, key, value):
         for node in self._elems:
             if node.attrib['name'] != key: continue
             vtype = node.attrib['type'].lower()
@@ -329,34 +330,141 @@ class UdfDictionary(Nestable):
             self._update_elems()
             self._prepare_lookup()
 
-    def __delitem__(self, key):
-        del self._lookup[key]
+    def _delitem(self, key):
         for node in self._elems:
             if node.attrib['name'] == key:
                 self.rootnode(self.instance).remove(node)
                 break
 
-    def items(self):
-        return list(self._lookup.items())
 
-    def clear(self):
-        for elem in self._elems:
-            self.rootnode(self.instance).remove(elem)
-        self._update_elems()
+class BaseDescriptor(XmlElement):
+    "Abstract base descriptor for an instance attribute."
 
-    def __iter__(self):
-        return self
+    def __get__(self, instance, cls):
+        raise NotImplementedError
 
-    def __next__(self):
-        try:
-            ret = list(self._lookup.keys())[self.location]
-        except IndexError:
-            raise StopIteration()
-        self.location = self.location + 1
-        return ret
+class TagDescriptor(BaseDescriptor):
+    """Abstract base descriptor for an instance attribute
+    represented by an XML element.
+    """
 
-    def get(self, key, default=None):
-        return self._lookup.get(key, default)
+    def __init__(self, tag):
+        self.tag = tag
+
+    def get_node(self, instance):
+        if self.tag:
+            return get_sub_node(self.rootnode(instance), self.tag)
+        else:
+            return self.rootnode(instance)
+
+
+class StringDescriptor(TagDescriptor):
+    """An instance attribute containing a string value
+    represented by an XML element.
+    """
+
+    def __get__(self, instance, cls):
+        instance.get()
+        node = self.get_node(instance)
+        if node is None:
+            return None
+        else:
+            return node.text
+
+    def __set__(self, instance, value):
+        instance.get()
+        node = self.get_node(instance)
+        if node is None:
+            # create the new tag
+            node = ElementTree.Element(self.tag)
+            self.rootnode(instance).append(node)
+        node.text = str(value)
+
+
+class StringAttributeDescriptor(TagDescriptor):
+    """An instance attribute containing a string value
+    represented by an XML attribute.
+    """
+
+    def __get__(self, instance, cls):
+        instance.get()
+        return self.rootnode(instance).attrib[self.tag]
+
+    def __set__(self, instance, value):
+        instance.get()
+        self.rootnode(instance).attrib[self.tag] = value
+
+
+class StringListDescriptor(Nestable, TagDescriptor):
+    """An instance attribute containing a list of strings
+    represented by multiple XML elements.
+    """
+    def __init__(self, tag, nesting=None):
+        Nestable.__init__(self, nesting)
+        TagDescriptor.__init__(self, tag)
+
+    def __get__(self, instance, cls):
+        instance.get()
+        result = []
+        for node in self.rootnode(instance):
+            if node.tag == self.tag:
+                result.append(node.text)
+        return result
+
+
+class StringDictionaryDescriptor(Nestable, TagDescriptor):
+    """An instance attribute containing a dictionary of string key/values
+    represented by a hierarchical XML element.
+    """
+
+    def __init__(self, tag, nesting=None):
+        Nestable.__init__(self, nesting)
+        TagDescriptor.__init__(self, tag)
+
+    def __get__(self, instance, cls):
+        instance.get()
+        result = dict()
+        node = get_sub_node(self.rootnode(instance), self.tag)
+        if node is not None:
+            for node2 in node.getchildren():
+                result[node2.tag] = node2.text
+        return result
+
+
+class IntegerDescriptor(StringDescriptor):
+    """An instance attribute containing an integer value
+    represented by an XMl element.
+    """
+
+    def __get__(self, instance, cls):
+        text = super(IntegerDescriptor, self).__get__(instance, cls)
+        if text is not None:
+            return int(text)
+
+
+class IntegerAttributeDescriptor(TagDescriptor):
+    """An instance attribute containing a integer value
+    represented by an XML attribute.
+    """
+
+    def __get__(self, instance, cls):
+        instance.get()
+        return int(self.rootnode(instance).attrib[self.tag])
+
+
+class BooleanDescriptor(StringDescriptor):
+    """An instance attribute containing a boolean value
+    represented by an XMl element.
+    """
+
+    def __get__(self, instance, cls):
+        text = super(BooleanDescriptor, self).__get__(instance, cls)
+        if text is not None:
+            return text.lower() == 'true'
+
+    def __set__(self, instance, value):
+        super(BooleanDescriptor, self).__set__(instance, str(value).lower())
+
 
 
 class UdfDictionaryDescriptor(BaseDescriptor):
@@ -390,19 +498,43 @@ class UdtDictionaryDescriptor(UdfDictionaryDescriptor):
     _UDT = True
 
 
+class PlacementDictionary(XmlDictionary):
+    def __init__(self, instance):
+        XmlDictionary.__init__(self, instance)
+
+    def _update_elems(self):
+        self._elems = []
+        for elem in self.rootnode(self.instance):
+            if elem.tag == 'placement':
+                self._elems.append(elem)
+
+    def _parse_element(self, element, **kwargs):
+        from genologics.entities import Artifact
+        key = get_sub_node(element, 'value').text
+        dict.__setitem__(self, key, Artifact(self.instance.lims, uri=element.attrib['uri']))
+
+    def _setitem(self, key, value):
+        if not isinstance(key, str):
+            raise ValueError()
+        elem1 = ElementTree.SubElement(self.rootnode(self.instance), 'placement', uri=value.uri, limsid=value.id)
+        elem2 = ElementTree.SubElement(elem1, 'value')
+        elem2.text = key
+
+
 class PlacementDictionaryDescriptor(TagDescriptor):
     """An instance attribute containing a dictionary of locations
     keys and artifact values represented by multiple XML elements.
     """
 
     def __get__(self, instance, cls):
-        from genologics.entities import Artifact
         instance.get()
-        self.value = dict()
-        for node in instance.root.findall(self.tag):
-            key = node.find('value').text
-            self.value[key] = Artifact(instance.lims, uri=node.attrib['uri'])
-        return self.value
+        return PlacementDictionary(instance)
+
+    def __set__(self, instance, dict_value):
+        instance.get()
+        placement_dict = PlacementDictionary(instance)
+        for k in dict_value:
+            placement_dict[k] = dict_value[k]
 
 
 class ExternalidListDescriptor(BaseDescriptor):
@@ -413,7 +545,7 @@ class ExternalidListDescriptor(BaseDescriptor):
     def __get__(self, instance, cls):
         instance.get()
         result = []
-        for node in instance.root.findall(nsmap('ri:externalid')):
+        for node in self.rootnode(instance).findall(nsmap('ri:externalid')):
             result.append((node.attrib.get('id'), node.attrib.get('uri')))
         return result
 
@@ -427,7 +559,7 @@ class EntityDescriptor(TagDescriptor):
 
     def __get__(self, instance, cls):
         instance.get()
-        node = instance.root.find(self.tag)
+        node = self.rootnode(instance).find(self.tag)
         if node is None:
             return None
         else:
@@ -439,46 +571,85 @@ class EntityDescriptor(TagDescriptor):
         if node is None:
             # create the new tag
             node = ElementTree.Element(self.tag)
-            instance.root.append(node)
+            self.rootnode(instance).append(node)
         node.attrib['uri'] = value.uri
 
 
-class EntityListDescriptor(Nestable, EntityDescriptor):
+class EntityList(TagXmlList, Nestable):
+
+    def __init__(self, instance, tag, klass, nesting=None, *args, **kwargs):
+        Nestable.__init__(self, nesting)
+        self.klass = klass
+        TagXmlList.__init__(self, instance, tag, *args, **kwargs)
+
+    def _create_new_node(self, value):
+        from genologics.entities import Entity
+        if not isinstance(value, Entity):
+            raise TypeError('You need to provide an Entity not ' + type(value))
+        node = ElementTree.Element(self.tag)
+        node.attrib['uri'] = value.uri
+        return node
+
+    def _parse_element(self, element, lims, **kwargs):
+        list.append(self, self.klass(lims, uri=element.attrib['uri']))
+
+
+class EntityListDescriptor(Nestable, TagDescriptor):
     """An instance attribute yielding a list of entity instances
     represented by multiple XML elements.
     """
 
     def __init__(self, tag, klass, nesting=None):
+        self.klass = klass
         Nestable.__init__(self, nesting)
-        EntityDescriptor.__init__(self, tag, klass)
+        TagDescriptor.__init__(self, tag)
 
     def __get__(self, instance, cls):
         instance.get()
-        result = []
-        for node in get_sub_nodes(self.rootnode(instance), self.tag):
-            result.append(self.klass(instance.lims, uri=node.attrib['uri']))
-        return result
+        return EntityList(instance=instance, tag=self.tag, klass=self.klass, nesting=self.rootkeys)
 
-    # TODO: create __set__ for EntityListDescriptor
+    def __set__(self, instance, cls, value):
+        instance.get()
+        el = EntityList(instance=instance, tag=self.tag, klass=self.klass, nesting=self.rootkeys)
+        el.clear()
+        return el.extend(value)
 
 
+class AttributeList(TagXmlList, Nestable):
 
-class AttributeListDescriptor(Nestable, StringAttributeDescriptor):
+    def __init__(self, instance, tag, nesting, *args, **kwargs):
+        Nestable.__init__(self, nesting)
+        TagXmlList.__init__(self, instance, tag, *args, **kwargs)
+
+    def _create_new_node(self, value):
+        if not isinstance(value, dict):
+            raise TypeError('You need to provide a dict not ' + type(value))
+        node = ElementTree.Element(self.tag)
+        for k, v in value.items():
+            node.attrib[k] = v
+        return node
+
+    def _parse_element(self, element, lims, **kwargs):
+        list.append(self, dict(element.attrib))
+
+
+class AttributeListDescriptor(Nestable, TagDescriptor):
     """An instance yielding a list of dictionnaries of attributes
        for a nested xml list of XML elements"""
 
     def __init__(self, tag, nesting=None):
         Nestable.__init__(self, nesting)
-        StringAttributeDescriptor.__init__(self, tag)
+        TagDescriptor.__init__(self, tag)
 
     def __get__(self, instance, cls):
         instance.get()
-        result = []
-        for node in self.rootnode(instance).findall(self.tag):
-            result.append(node.attrib)
-        return result
+        return AttributeList(instance=instance, tag=self.tag, nesting=self.rootkeys)
 
-    # TODO: create __set__ for AttributeListDescriptor
+    def __set__(self, instance, cls, value):
+        instance.get()
+        el = AttributeList(instance=instance, tag=self.tag, nesting=self.rootkeys)
+        el.clear()
+        return el.extend(value)
 
 
 class DimensionDescriptor(TagDescriptor):
@@ -488,7 +659,7 @@ class DimensionDescriptor(TagDescriptor):
 
     def __get__(self, instance, cls):
         instance.get()
-        node = instance.root.find(self.tag)
+        node = self.rootnode(instance).find(self.tag)
         return dict(is_alpha=node.find('is-alpha').text.lower() == 'true',
                     offset=int(node.find('offset').text),
                     size=int(node.find('size').text))
@@ -502,7 +673,7 @@ class LocationDescriptor(TagDescriptor):
     def __get__(self, instance, cls):
         from genologics.entities import Container
         instance.get()
-        node = instance.root.find(self.tag)
+        node = self.rootnode(instance).find(self.tag)
         uri = node.find('container').attrib['uri']
         return Container(instance.lims, uri=uri), node.find('value').text
 
@@ -513,7 +684,7 @@ class ReagentLabelList(BaseDescriptor):
     def __get__(self, instance, cls):
         instance.get()
         self.value = []
-        for node in instance.root.findall('reagent-label'):
+        for node in self.rootnode(instance).findall('reagent-label'):
             try:
                 self.value.append(node.attrib['name'])
             except:
