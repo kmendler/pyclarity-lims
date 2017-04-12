@@ -234,7 +234,7 @@ class TestStringDictionaryDescriptor(TestDescriptor):
     def test__get__(self):
         sd = self._make_desc(StringDictionaryDescriptor, 'test-subentry')
         res = sd.__get__(self.instance, None)
-        assert type(res) == dict
+        assert isinstance(res, dict)
         assert res['test-firstkey'] is None
         assert res['test-secondkey'] == 'second value'
 
@@ -417,6 +417,7 @@ class TestEntityList(TestCase):
         assert el[0] == self.a1
         assert el[1] == self.a2
         el = EntityList(self.instance2, 'artifact', Artifact, nesting=['nesting'])
+        print(el)
         assert el[0] == self.a1
         assert el[1] == self.a2
 
