@@ -482,8 +482,8 @@ class OutputPlacementList(TagXmlList):
         TagXmlList.__init__(self, instance, tag='output-placement', nesting=['output-placements'], *args, **kwargs)
 
     def _create_new_node(self, value):
-        if not isinstance(value, tuple):
-            raise TypeError('You need to provide a tuple not %s' % (type(value)))
+        if not isinstance(value, list):
+            raise TypeError('You need to provide a list not %s' % (type(value)))
         art, location = value
         container, position = location
         node = ElementTree.Element(self.tag)
@@ -496,7 +496,7 @@ class OutputPlacementList(TagXmlList):
 
     def _parse_element(self, element, lims, **kwargs):
         from genologics.entities import Artifact, Container
-        input = Artifact(self.lims, uri=element.attrib['uri'])
+        input = Artifact(lims, uri=element.attrib['uri'])
         loc = element.find('location')
         location = (None, None)
         if loc:
@@ -504,7 +504,7 @@ class OutputPlacementList(TagXmlList):
                 Container(lims, uri=loc.find('container').attrib['uri']),
                 loc.find('value').text
             )
-        list.append(self, (input, location))
+        list.append(self, [input, location])
 
 
 # Descriptors: This section contains the object that can be used in entities
@@ -709,7 +709,7 @@ class MuttableDescriptor():
         instance.get()
         return self.muttableklass(instance=instance, **self.kwargs)
 
-    def __set__(self, instance, cls, value):
+    def __set__(self, instance, value):
         instance.get()
         muttable = self.muttableklass(instance=instance, **self.kwargs)
         muttable.clear()
