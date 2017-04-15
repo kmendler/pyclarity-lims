@@ -695,14 +695,16 @@ class StepPlacements(Entity):
     _placementslist = None
 
     selected_containers = EntityListDescriptor(tag='container', klass=Container, nesting=['selected-containers'])
-    placement_list      = OutputPlacementListDescriptor()
+    _placement_list      = OutputPlacementListDescriptor()
 
-    # functions kept for backward compatibility
     def get_placement_list(self):
-        return self.placement_list
+        return self._placement_list
 
     def set_placement_list(self, value):
-        self.placement_list = value
+        self._placement_list = value
+        self.selected_containers = list(set([p[1][0] for p in self.placement_list]))
+
+    placement_list = property(get_placement_list, set_placement_list)
 
     def get_selected_containers(self):
         return self.selected_containers
@@ -798,8 +800,8 @@ class StepDetails(Entity):
     """Detail associated with a step"""
 
     input_output_maps = InputOutputMapList(nesting=['input-output-maps'])
-    udf = UdfDictionaryDescriptor('fields')
-    udt = UdtDictionaryDescriptor('fields')
+    udf = UdfDictionaryDescriptor(nesting=['fields'])
+    udt = UdtDictionaryDescriptor(nesting=['fields'])
 
 
 class Step(Entity):

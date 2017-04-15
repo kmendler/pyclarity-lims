@@ -3,10 +3,13 @@ from sys import version_info
 from unittest import TestCase
 from xml.etree import ElementTree
 
+import pytest
+
+from genologics.constants import nsmap
 from genologics.descriptors import StringDescriptor, StringAttributeDescriptor, StringListDescriptor, \
     StringDictionaryDescriptor, IntegerDescriptor, BooleanDescriptor, UdfDictionary, EntityDescriptor, \
-    InputOutputMapList, EntityListDescriptor, PlacementDictionary, EntityList
-from genologics.entities import Artifact, Process
+    InputOutputMapList, EntityListDescriptor, PlacementDictionary, EntityList, SubTagDictionary, ExternalidList
+from genologics.entities import Artifact
 from genologics.lims import Lims
 
 if version_info[0] == 2:
@@ -24,11 +27,13 @@ class TestDescriptor(TestCase):
         ElementTree.ElementTree(e).write(outfile, encoding='utf-8', xml_declaration=True)
         return outfile.getvalue()
 
+
 def print_etree(etree):
     import sys
     outfile = BytesIO()
     ElementTree.ElementTree(etree).write(outfile, encoding='utf-8', xml_declaration=True)
     sys.stdout.buffer.write(outfile.getvalue())
+
 
 class TestStringDescriptor(TestDescriptor):
     def setUp(self):
@@ -135,6 +140,7 @@ class TestEntityDescriptor(TestDescriptor):
         ed = self._make_desc(EntityDescriptor, 'artifact', Artifact)
         ed.__set__(instance_new, self.a1)
         assert instance_new.root.find('artifact').attrib['uri'] == 'http://testgenologics.com:4040/api/v2/artifacts/a1'
+
 
 class TestEntityListDescriptor(TestDescriptor):
     def setUp(self):
@@ -272,21 +278,6 @@ class TestUdfDictionary(TestCase):
             else:
                 return e.text
 
-    def test_get_udt(self):
-        pass
-
-    def test_set_udt(self):
-        pass
-
-    def test__update_elems(self):
-        pass
-
-    def test__prepare_lookup(self):
-        pass
-
-    def test___contains__(self):
-        pass
-
     def test___getitem__(self):
         assert self.dict1.__getitem__('test') == self._get_udf_value(self.dict1, 'test')
         assert self.dict2.__getitem__('test') == self._get_udf_value(self.dict2, 'test')
@@ -315,7 +306,6 @@ class TestUdfDictionary(TestCase):
         self.dict2.__setitem__('test', 'other')
         assert self._get_udf_value(self.dict2, 'test') == 'other'
 
-
     def test___setitem__new(self):
         self.dict1.__setitem__('new string', 'new stuff')
         assert self._get_udf_value(self.dict1, 'new string') == 'new stuff'
@@ -328,7 +318,6 @@ class TestUdfDictionary(TestCase):
 
         self.dict2.__setitem__('new string', 'new stuff')
         assert self._get_udf_value(self.dict2, 'new string') == 'new stuff'
-
 
     def test___setitem__unicode(self):
         assert self._get_udf_value(self.dict1, 'test') == 'stuff'
@@ -351,23 +340,30 @@ class TestUdfDictionary(TestCase):
         assert self._get_udf_value(dict1, 'test') == 'value1'
 
     def test___delitem__(self):
-        pass
+        assert self.dict1['test'] == self._get_udf_value(self.dict1, 'test')
+        del self.dict1['test']
+        with pytest.raises(KeyError):
+            self.dict1['test']
+        assert self._get_udf_value(self.dict1, 'test') == None
+
 
     def test_items(self):
         pass
 
     def test_clear(self):
-        pass
+        assert self.dict1
+        self.dict1.clear()
+        assert not self.dict1
+        assert len(self.dict1) == 0
 
     def test___iter__(self):
-        pass
-
-    def test___next__(self):
-        pass
-
-    def test_get(self):
-        pass
-
+        expected_content = [
+            ("test", "stuff"),
+            ("really?", True),
+            ("how much", 42)
+        ]
+        for k in self.dict1:
+            assert (k, self.dict1[k]) in expected_content
 
 
 class TestPlacementDictionary(TestCase):
@@ -376,7 +372,7 @@ class TestPlacementDictionary(TestCase):
         et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <test-entry xmlns:udf="http://genologics.com/ri/userdefined">
 <placement uri="http://testgenologics.com:4040/api/v2/artifacts/a1" limsid="a1">
-<value>1:1</value>
+<value>A:1</value>
 </placement>
 </test-entry>""")
         self.lims = Lims('http://testgenologics.com:4040', username='test', password='password')
@@ -384,9 +380,39 @@ class TestPlacementDictionary(TestCase):
         self.dict1 = PlacementDictionary(self.instance1)
         self.art1 = Artifact(lims=self.lims, id='a1')
 
+    def test___getitem__(self):
+        assert self.dict1['A:1'] == self.art1
+
+    def test___setitem__(self):
+        assert len(self.dict1.rootnode(self.dict1.instance).findall('placement')) == 1
+        art2 = Artifact(lims=self.lims, id='a2')
+        self.dict1['A:2'] = art2
+        assert len(self.dict1.rootnode(self.dict1.instance).findall('placement')) == 2
+        assert self.dict1['A:2'] == art2
+
+
+class TestSubTagDictionary(TestCase):
+
+    def setUp(self):
+        et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<test-entry xmlns:udf="http://genologics.com/ri/userdefined">
+<test-tag>
+<key1>value1</key1>
+</test-tag>
+</test-entry>""")
+        self.lims = Lims('http://testgenologics.com:4040', username='test', password='password')
+        self.instance1 = Mock(root=et, lims=self.lims)
+        self.dict1 = SubTagDictionary(self.instance1, tag='test-tag')
 
     def test___getitem__(self):
-        assert self.dict1.__getitem__('1:1') == self.art1
+        assert self.dict1['key1'] == 'value1'
+
+    def test___setitem__(self):
+        assert len(self.dict1.rootnode(self.dict1.instance).find('test-tag')) == 1
+        art2 = Artifact(lims=self.lims, id='a2')
+        self.dict1['key2'] = 'value2'
+        assert len(self.dict1.rootnode(self.dict1.instance).find('test-tag')) == 2
+        assert self.dict1['key2'] == 'value2'
 
 
 class TestEntityList(TestCase):
@@ -417,7 +443,6 @@ class TestEntityList(TestCase):
         assert el[0] == self.a1
         assert el[1] == self.a2
         el = EntityList(self.instance2, 'artifact', Artifact, nesting=['nesting'])
-        print(el)
         assert el[0] == self.a1
         assert el[1] == self.a2
 
@@ -455,8 +480,6 @@ class TestEntityList(TestCase):
         assert el.instance.root.findall('artifact')[1].attrib['uri'] == 'http://testgenologics.com:4040/api/v2/artifacts/a3'
 
 
-
-
 class TestInputOutputMapList(TestCase):
     def setUp(self):
         et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -477,3 +500,34 @@ class TestInputOutputMapList(TestCase):
         res = self.IO_map.__get__(self.instance1, None)
         assert sorted(res[0][0].keys()) == sorted(expected_keys_input)
         assert sorted(res[0][1].keys()) == sorted(expected_keys_ouput)
+
+
+
+class TestExternalidList(TestCase):
+
+    def setUp(self):
+        et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <test-entry>
+    <ri:externalid xmlns:ri="http://genologics.com/ri" id="1" uri="http://testgenologics.com:4040/api/v2/external/1" />
+    <ri:externalid xmlns:ri="http://genologics.com/ri" id="2" uri="http://testgenologics.com:4040/api/v2/external/2" />
+    </test-entry>
+    """)
+        self.lims = Lims('http://testgenologics.com:4040', username='test', password='password')
+        self.instance1 = Mock(root=et, lims=self.lims)
+
+    def test_get(self):
+        el = ExternalidList(self.instance1)
+        assert len(el) == 2
+        assert el[0] == ("1", "http://testgenologics.com:4040/api/v2/external/1")
+        assert el[1] == ("2", "http://testgenologics.com:4040/api/v2/external/2")
+
+    def test_append(self):
+        el = ExternalidList(self.instance1)
+        assert len(el) == 2
+        el.append(("3", "http://testgenologics.com:4040/api/v2/external/3"))
+        assert len(el) == 3
+        assert el[2] == ("3", "http://testgenologics.com:4040/api/v2/external/3")
+        assert len(el._elems) == 3
+        elem = el.instance.root.findall(nsmap('ri:externalid'))
+        assert elem[2].attrib['id'] == '3'
+        assert elem[2].attrib['uri'] == 'http://testgenologics.com:4040/api/v2/external/3'

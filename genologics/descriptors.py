@@ -62,14 +62,12 @@ class XmlDictionary(XmlMutable, dict):
     def __setitem__(self, key, value):
         dict.__setitem__(self, key, value)
         self._setitem(key, value)
+        self._update_elems()
 
     def __delitem__(self, key):
         dict.__delitem__(self, key)
-        self._del_item(key)
-        for node in self._elems:
-            if node.attrib['name'] == key:
-                self.rootnode(self.instance).remove(node)
-                break
+        self._delitem(key)
+        self._update_elems()
 
     def _prepare_lookup(self):
         for elem in self._elems:
@@ -222,10 +220,6 @@ class UdfDictionary(Nestable, XmlDictionary):
 
             elem.text = value
 
-            #update the internal elements and lookup with new values
-            self._update_elems()
-            self._prepare_lookup()
-
     def _delitem(self, key):
         for node in self._elems:
             if node.attrib['name'] == key:
@@ -257,6 +251,13 @@ class PlacementDictionary(XmlDictionary):
         elem2 = ElementTree.SubElement(elem1, 'value')
         elem2.text = key
 
+    def _delitem(self, key):
+        for node in self._elems:
+            if node.text == key:
+                self.rootnode(self.instance).remove(node)
+                break
+
+
 class SubTagDictionary(XmlDictionary):
     """Dictionary of xml sub element where the key is the tag
     and the value is the text of the sub element.
@@ -281,6 +282,13 @@ class SubTagDictionary(XmlDictionary):
         elem = ElementTree.SubElement(tag_node, key)
         elem.text = value
 
+    def _delitem(self, key):
+        tag_node = self.rootnode(self.instance).find(self.tag)
+        for node in self._elems:
+            if node.tag == key:
+                tag_node.remove(node)
+                break
+
 
 # List types
 class XmlList(XmlMutable, list):
@@ -296,7 +304,8 @@ class XmlList(XmlMutable, list):
             self._parse_element(elem, lims=self.instance.lims)
 
     def clear(self):
-        list.clear(self)
+        # python 2.7 does not have a clear function for list
+        del self[:]
         for elem in self._elems:
             self.rootnode(self.instance).remove(elem)
         self._update_elems()
@@ -506,6 +515,23 @@ class OutputPlacementList(TagXmlList):
             )
         list.append(self, [input, location])
 
+class ExternalidList(XmlList):
+
+    def _update_elems(self):
+        self._elems = self.rootnode(self.instance).findall(nsmap('ri:externalid'))
+
+    def _create_new_node(self, value):
+        if not isinstance(value, tuple):
+            raise TypeError('You need to provide a tuple not ' + type(value))
+        node = ElementTree.Element(nsmap('ri:externalid'))
+        id, uri = value
+        node.attrib['id'] = id
+        node.attrib['uri'] = uri
+        return node
+
+    def _parse_element(self, element, **kwargs):
+        list.append(self, (element.attrib.get('id'), element.attrib.get('uri')))
+
 
 # Descriptors: This section contains the object that can be used in entities
 class BaseDescriptor(XmlElement):
@@ -601,50 +627,6 @@ class StringAttributeDescriptor(TagDescriptor):
         instance.root.attrib[self.tag] = value
 
 
-class UdfDictionaryDescriptor(BaseDescriptor):
-    """An instance attribute containing a dictionary of UDF values
-    represented by multiple XML elements.
-    """
-    _UDT = False
-
-    def __init__(self, nesting=None):
-        super(BaseDescriptor, self).__init__()
-        self.nesting = nesting
-
-    def __get__(self, instance, cls):
-        instance.get()
-        self.value = UdfDictionary(instance, nesting=self.nesting, udt=self._UDT)
-        return self.value
-
-    def __set__(self, instance, dict_value):
-        instance.get()
-        udf_dict = UdfDictionary(instance, nesting=self.nesting, udt=self._UDT)
-        udf_dict.clear()
-        for k in dict_value:
-            udf_dict[k] = dict_value[k]
-
-
-class UdtDictionaryDescriptor(UdfDictionaryDescriptor):
-    """An instance attribute containing a dictionary of UDF values
-    in a UDT represented by multiple XML elements.
-    """
-
-    _UDT = True
-
-
-class ExternalidListDescriptor(BaseDescriptor):
-    """An instance attribute yielding a list of tuples (id, uri) for
-    external identifiers represented by multiple XML elements.
-    """
-
-    def __get__(self, instance, cls):
-        instance.get()
-        result = []
-        for node in self.rootnode(instance).findall(nsmap('ri:externalid')):
-            result.append((node.attrib.get('id'), node.attrib.get('uri')))
-        return result
-
-
 class EntityDescriptor(TagDescriptor):
     "An instance attribute referencing another entity instance."
 
@@ -696,7 +678,7 @@ class LocationDescriptor(TagDescriptor):
         return Container(instance.lims, uri=uri), node.find('value').text
 
 
-class MuttableDescriptor():
+class MuttableDescriptor(BaseDescriptor):
     """An instance attribute yielding a list or dict of muttable objects
     represented by XML elements.
     """
@@ -719,6 +701,23 @@ class MuttableDescriptor():
             for k in value:
                 muttable[k] = value[k]
 
+class UdfDictionaryDescriptor(MuttableDescriptor):
+    """An instance attribute containing a dictionary of UDF values
+    represented by multiple XML elements.
+    """
+    def __init__(self, **kwargs):
+        MuttableDescriptor.__init__(self, UdfDictionary, udt=False, **kwargs)
+
+
+class UdtDictionaryDescriptor(MuttableDescriptor):
+    """An instance attribute containing a dictionary of UDF values
+    in a UDT represented by multiple XML elements.
+    """
+
+    def __init__(self, **kwargs):
+        MuttableDescriptor.__init__(self, UdfDictionary, udt=False, **kwargs)
+
+
 class PlacementDictionaryDescriptor(MuttableDescriptor):
     """An instance attribute containing a dictionary of locations
     keys and artifact values represented by multiple XML elements.
@@ -726,6 +725,7 @@ class PlacementDictionaryDescriptor(MuttableDescriptor):
 
     def __init__(self, tag, **kwargs):
         MuttableDescriptor.__init__(self, PlacementDictionary, tag=tag, **kwargs)
+
 
 class EntityListDescriptor(MuttableDescriptor):
 
@@ -785,3 +785,11 @@ class OutputPlacementListDescriptor(MuttableDescriptor):
 
     def __init__(self, **kwargs):
         MuttableDescriptor.__init__(self, OutputPlacementList, **kwargs)
+
+class ExternalidListDescriptor(MuttableDescriptor):
+    """An instance attribute yielding a list of tuples (id, uri) for
+    external identifiers represented by multiple XML elements.
+    """
+
+    def __init__(self, **kwargs):
+        MuttableDescriptor.__init__(self, ExternalidList, **kwargs)
