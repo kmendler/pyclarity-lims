@@ -75,8 +75,7 @@ class XmlDictionary(XmlMutable, dict):
 
     def clear(self):
         dict.clear(self)
-        for elem in self._elems:
-            self.rootnode(self.instance).remove(elem)
+        self.rootnode(self.instance).clear()
         self._update_elems()
 
     def _update_elems(self):
@@ -234,10 +233,7 @@ class PlacementDictionary(XmlDictionary):
     """
 
     def _update_elems(self):
-        self._elems = []
-        for elem in self.rootnode(self.instance):
-            if elem.tag == 'placement':
-                self._elems.append(elem)
+        self._elems = self.rootnode(self.instance).findall('placement')
 
     def _parse_element(self, element, **kwargs):
         from genologics.entities import Artifact
@@ -268,7 +264,11 @@ class SubTagDictionary(XmlDictionary):
         XmlDictionary.__init__(self, instance)
 
     def _update_elems(self):
-        self._elems = self.rootnode(self.instance).find(self.tag).getchildren()
+        tag_node = self.rootnode(self.instance).find(self.tag)
+        if tag_node:
+            self._elems = tag_node.getchildren()
+        else:
+            self._elems = []
 
     def _parse_element(self, element, **kwargs):
         dict.__setitem__(self, element.tag, element.text)
@@ -306,8 +306,7 @@ class XmlList(XmlMutable, list):
     def clear(self):
         # python 2.7 does not have a clear function for list
         del self[:]
-        for elem in self._elems:
-            self.rootnode(self.instance).remove(elem)
+        self.rootnode(self.instance).clear()
         self._update_elems()
 
     def __add__(self, other_list):
@@ -377,17 +376,14 @@ class XmlList(XmlMutable, list):
 
 
 class TagXmlList(XmlList, Nestable):
-    """Abstract class that creates element of the list based on the provided tag."""
+    """Abstract class that creates elements of the list based on the provided tag."""
     def __init__(self, instance, tag, nesting=None, *args, **kwargs):
         self.tag = tag
         Nestable.__init__(self, nesting)
         XmlList.__init__(self, instance=instance, *args, **kwargs)
 
     def _update_elems(self):
-        self._elems = []
-        for elem in self.rootnode(self.instance):
-            if elem.tag == self.tag:
-                self._elems.append(elem)
+        self._elems = self.rootnode(self.instance).findall(self.tag)
 
 
 class XmlTextList(TagXmlList):
@@ -406,7 +402,7 @@ class XmlTextList(TagXmlList):
 class XmlAttributeList(TagXmlList):
     """This is a list of dict linked to an element's attributes.
     The list can only contain and be provided with dict.
-    Mutating the dicts won't modify the XML"""
+    Mutating the internal dicts won't modify the XML"""
 
     def _create_new_node(self, value):
         if not isinstance(value, dict):
@@ -697,7 +693,7 @@ class MuttableDescriptor(BaseDescriptor):
         muttable.clear()
         if issubclass(self.muttableklass, list):
             return muttable.extend(value)
-        elif issubclass(self.muttableklass, list):
+        elif issubclass(self.muttableklass, dict):
             for k in value:
                 muttable[k] = value[k]
 

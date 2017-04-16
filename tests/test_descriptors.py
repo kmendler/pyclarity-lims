@@ -217,17 +217,16 @@ class TestStringListDescriptor(TestDescriptor):
         sd = self._make_desc(StringListDescriptor, 'test-subentry', nesting=['nesting'])
         assert sd.__get__(self.instance2, None) == ['A01', 'B01']
 
+    def test__set__(self):
+        sd = self._make_desc(StringListDescriptor, 'test-subentry')
+        sd.__set__(self.instance1, ['A02', 'B02'])
+        res = sd.__get__(self.instance1, None)
+        assert isinstance(res, list)
+        assert res == ['A02', 'B02']
+
 
 class TestStringDictionaryDescriptor(TestDescriptor):
     def setUp(self):
-        et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<test-entry>
-<test-subentry>
-<test-firstkey/>
-<test-secondkey>second value</test-secondkey>
-</test-subentry>
-</test-entry>""")
-        self.instance = Mock(root=et)
         et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <test-entry>
 <test-subentry>
@@ -244,6 +243,12 @@ class TestStringDictionaryDescriptor(TestDescriptor):
         assert res['test-firstkey'] is None
         assert res['test-secondkey'] == 'second value'
 
+    def test__set__(self):
+        sd = self._make_desc(StringDictionaryDescriptor, 'test-subentry')
+        sd.__set__(self.instance, {'mykey1': 'myvalue1'})
+        res = sd.__get__(self.instance, None)
+        assert isinstance(res, dict)
+        assert res['mykey1'] == 'myvalue1'
 
 class TestUdfDictionary(TestCase):
     def setUp(self):
@@ -531,3 +536,5 @@ class TestExternalidList(TestCase):
         elem = el.instance.root.findall(nsmap('ri:externalid'))
         assert elem[2].attrib['id'] == '3'
         assert elem[2].attrib['uri'] == 'http://testgenologics.com:4040/api/v2/external/3'
+
+
