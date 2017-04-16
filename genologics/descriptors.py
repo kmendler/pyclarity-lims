@@ -46,7 +46,7 @@ class Nestable(XmlElement):
         return _rootnode
 
 class XmlMutable(XmlElement):
-    """Class that receive the an instance so it can be mutated in place"""
+    """Class that receive an instance so it can be mutated in place"""
     def __init__(self, instance):
         self.instance = instance
 
@@ -674,7 +674,7 @@ class LocationDescriptor(TagDescriptor):
         return Container(instance.lims, uri=uri), node.find('value').text
 
 
-class MuttableDescriptor(BaseDescriptor):
+class MutableDescriptor(BaseDescriptor):
     """An instance attribute yielding a list or dict of muttable objects
     represented by XML elements.
     """
@@ -697,95 +697,95 @@ class MuttableDescriptor(BaseDescriptor):
             for k in value:
                 muttable[k] = value[k]
 
-class UdfDictionaryDescriptor(MuttableDescriptor):
+class UdfDictionaryDescriptor(MutableDescriptor):
     """An instance attribute containing a dictionary of UDF values
     represented by multiple XML elements.
     """
     def __init__(self, **kwargs):
-        MuttableDescriptor.__init__(self, UdfDictionary, udt=False, **kwargs)
+        MutableDescriptor.__init__(self, UdfDictionary, udt=False, **kwargs)
 
 
-class UdtDictionaryDescriptor(MuttableDescriptor):
+class UdtDictionaryDescriptor(MutableDescriptor):
     """An instance attribute containing a dictionary of UDF values
     in a UDT represented by multiple XML elements.
     """
 
     def __init__(self, **kwargs):
-        MuttableDescriptor.__init__(self, UdfDictionary, udt=False, **kwargs)
+        MutableDescriptor.__init__(self, UdfDictionary, udt=False, **kwargs)
 
 
-class PlacementDictionaryDescriptor(MuttableDescriptor):
+class PlacementDictionaryDescriptor(MutableDescriptor):
     """An instance attribute containing a dictionary of locations
     keys and artifact values represented by multiple XML elements.
     """
 
     def __init__(self, tag, **kwargs):
-        MuttableDescriptor.__init__(self, PlacementDictionary, tag=tag, **kwargs)
+        MutableDescriptor.__init__(self, PlacementDictionary, tag=tag, **kwargs)
 
 
-class EntityListDescriptor(MuttableDescriptor):
+class EntityListDescriptor(MutableDescriptor):
 
     """An instance attribute yielding a list of entity instances
     represented by multiple XML elements.
     """
 
     def __init__(self, tag, klass, **kwargs):
-        MuttableDescriptor.__init__(self, EntityList, tag=tag, klass=klass, **kwargs)
+        MutableDescriptor.__init__(self, EntityList, tag=tag, klass=klass, **kwargs)
 
 
-class StringListDescriptor(MuttableDescriptor):
+class StringListDescriptor(MutableDescriptor):
     """An instance attribute containing a list of strings
     represented by multiple XML elements.
     """
     def __init__(self, tag, **kwargs):
-        MuttableDescriptor.__init__(self, XmlTextList, tag=tag, **kwargs)
+        MutableDescriptor.__init__(self, XmlTextList, tag=tag, **kwargs)
 
 
-class ReagentLabelList(MuttableDescriptor):
+class ReagentLabelList(MutableDescriptor):
     """An instance attribute yielding a list of reagent labels"""
 
     def __init__(self, **kwargs):
-        MuttableDescriptor.__init__(self, XmlReagentLabelList, **kwargs)
+        MutableDescriptor.__init__(self, XmlReagentLabelList, **kwargs)
 
 
-class AttributeListDescriptor(MuttableDescriptor):
+class AttributeListDescriptor(MutableDescriptor):
     """An instance yielding a list of dictionaries of attributes
        for a list of XML elements"""
 
     def __init__(self, tag, **kwargs):
-        MuttableDescriptor.__init__(self, XmlAttributeList, tag=tag, **kwargs)
+        MutableDescriptor.__init__(self, XmlAttributeList, tag=tag, **kwargs)
 
-class StringDictionaryDescriptor(MuttableDescriptor):
+class StringDictionaryDescriptor(MutableDescriptor):
     """An instance attribute containing a dictionary of string key/values
     represented by a hierarchical XML element.
     """
 
     def __init__(self, tag, **kwargs):
-        MuttableDescriptor.__init__(self, SubTagDictionary, tag=tag, **kwargs)
+        MutableDescriptor.__init__(self, SubTagDictionary, tag=tag, **kwargs)
 
 
-class InputOutputMapList(MuttableDescriptor):
+class InputOutputMapList(MutableDescriptor):
     """An instance attribute yielding a list of tuples (input, output)
     where each item is a dictionary, representing the input/output
     maps of a Process instance.
     """
 
     def __init__(self, **kwargs):
-        MuttableDescriptor.__init__(self, XmlInputOutputMapList, **kwargs)
+        MutableDescriptor.__init__(self, XmlInputOutputMapList, **kwargs)
 
-class OutputPlacementListDescriptor(MuttableDescriptor):
+class OutputPlacementListDescriptor(MutableDescriptor):
     """An instance attribute yielding a list of tuples (A, (B, C)) where:
      A is an artifact
      B is a container
      C is a string specifying the location such as "1:1"    """
 
     def __init__(self, **kwargs):
-        MuttableDescriptor.__init__(self, OutputPlacementList, **kwargs)
+        MutableDescriptor.__init__(self, OutputPlacementList, **kwargs)
 
-class ExternalidListDescriptor(MuttableDescriptor):
+class ExternalidListDescriptor(MutableDescriptor):
     """An instance attribute yielding a list of tuples (id, uri) for
     external identifiers represented by multiple XML elements.
     """
 
     def __init__(self, **kwargs):
-        MuttableDescriptor.__init__(self, ExternalidList, **kwargs)
+        MutableDescriptor.__init__(self, ExternalidList, **kwargs)
