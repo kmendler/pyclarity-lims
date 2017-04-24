@@ -811,6 +811,13 @@ class StepDetails(Entity):
     udt = UdtDictionaryDescriptor(nesting=['fields'])
 
 
+class StepProgramStatus(Entity):
+    """Status display in the step"""
+
+    status  = StringDescriptor('status')
+    message = StringDescriptor('message')
+
+
 class Step(Entity):
     "Step, as defined by the genologics API."
 
@@ -818,13 +825,12 @@ class Step(Entity):
     _PREFIX = 'stp'
     _CREATION_TAG = 'step-creation'
 
-    current_state = StringAttributeDescriptor('current-state')
-    _reagent_lots = EntityDescriptor('reagent-lots', StepReagentLots)
-    actions       = EntityDescriptor('actions', StepActions)
-    placements    = EntityDescriptor('placements', StepPlacements)
-    details       = EntityDescriptor('details', StepDetails)
-
-    #program_status     = EntityDescriptor('program-status',StepProgramStatus)
+    current_state  = StringAttributeDescriptor('current-state')
+    _reagent_lots  = EntityDescriptor('reagent-lots', StepReagentLots)
+    actions        = EntityDescriptor('actions', StepActions)
+    placements     = EntityDescriptor('placements', StepPlacements)
+    details        = EntityDescriptor('details', StepDetails)
+    program_status = EntityDescriptor('program-status', StepProgramStatus)
 
     def advance(self):
         self.root = self.lims.post(
