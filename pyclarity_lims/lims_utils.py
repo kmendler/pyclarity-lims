@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-from genologics.epp import EppLogger
+from pyclarity_lims.epp import EppLogger
 
 import logging
 import sys
 import os
 
-from genologics.lims import *
-from genologics.config import BASEURI, USERNAME, PASSWORD
+from pyclarity_lims.lims import *
+from pyclarity_lims.config import BASEURI, USERNAME, PASSWORD
 
 lims = Lims(BASEURI, USERNAME, PASSWORD)
 

@@ -52,7 +52,7 @@ class Lims(object):
     def __init__(self, baseuri, username, password, version=VERSION):
         """baseuri: Base URI for the GenoLogics server, excluding
                     the 'api' or version parts!
-                    For example: https://genologics.scilifelab.se:8443/
+                    For example: https://pyclarity_lims.scilifelab.se:8443/
         username: The account name of the user to login as.
         password: The password for the user account to login as.
         version: The optional LIMS API version, by default 'v2' 

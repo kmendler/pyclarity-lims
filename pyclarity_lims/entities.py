@@ -5,8 +5,8 @@ Entities and their descriptors for the LIMS interface.
 Per Kraulis, Science for Life Laboratory, Stockholm, Sweden.
 Copyright (C) 2012 Per Kraulis
 """
-from genologics.constants import nsmap
-from genologics.descriptors import StringDescriptor, UdfDictionaryDescriptor, \
+from pyclarity_lims.constants import nsmap
+from pyclarity_lims.descriptors import StringDescriptor, UdfDictionaryDescriptor, \
     UdtDictionaryDescriptor, ExternalidListDescriptor, EntityDescriptor, BooleanDescriptor, \
     DimensionDescriptor, IntegerDescriptor, \
     InputOutputMapList, LocationDescriptor, IntegerAttributeDescriptor, \
@@ -805,7 +805,7 @@ class StepDetails(Entity):
 
 
 class Step(Entity):
-    "Step, as defined by the genologics API."
+    "Step, as defined by the pyclarity_lims API."
 
     _URI = 'steps'
     _PREFIX = 'stp'

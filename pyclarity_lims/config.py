@@ -6,10 +6,10 @@ import ConfigParser
 
 '''
 Usage:
-from genologics.config import BASEURI, USERNAME, PASSWORD
+from pyclarity_lims.config import BASEURI, USERNAME, PASSWORD
 
 Alternate Usage: 
-from genologics import config
+from pyclarity_lims import config
 BASEURI, USERNAME, PASSWORD, VERSION, MAIN_LOG = config.load_config(specified_config = <path to config file>) 
 '''
 
@@ -20,12 +20,12 @@ def get_config_info(config_file):
     config.readfp(open(config_file))
     
     
-    BASEURI = config.get('genologics', 'BASEURI').rstrip()
-    USERNAME = config.get('genologics', 'USERNAME').rstrip()
-    PASSWORD = config.get('genologics', 'PASSWORD').rstrip()
+    BASEURI = config.get('pyclarity_lims', 'BASEURI').rstrip()
+    USERNAME = config.get('pyclarity_lims', 'USERNAME').rstrip()
+    PASSWORD = config.get('pyclarity_lims', 'PASSWORD').rstrip()
     
-    if config.has_section('genologics') and config.has_option('genologics','VERSION'):
-        VERSION = config.get('genologics', 'VERSION').rstrip()
+    if config.has_section('pyclarity_lims') and config.has_option('pyclarity_lims','VERSION'):
+        VERSION = config.get('pyclarity_lims', 'VERSION').rstrip()
     else:
         VERSION = 'v2'
         
@@ -43,7 +43,7 @@ def load_config(specified_config = None):
         config = ConfigParser.SafeConfigParser()
         try:
             conf_file = config.read([os.path.expanduser('~/.genologicsrc'), '.genologicsrc',
-                        'genologics.conf', 'genologics.cfg', '/etc/genologics.conf'])
+                        'pyclarity_lims.conf', 'pyclarity_lims.cfg', '/etc/pyclarity_lims.conf'])
 
             # First config file found wins
             config_file = conf_file[0]

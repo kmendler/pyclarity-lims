@@ -14,8 +14,8 @@ import pkg_resources
 from pkg_resources import DistributionNotFound
 from shutil import copy
 from requests import HTTPError
-from genologics.entities import Artifact
-from genologics.config import MAIN_LOG
+from pyclarity_lims.entities import Artifact
+from pyclarity_lims.config import MAIN_LOG
 from logging.handlers import RotatingFileHandler
 from time import strftime, localtime
 import csv
@@ -59,17 +59,17 @@ class EppLogger(object):
 
     This context manager (CM) automatically logs what script that is executed,
     with what parameters it was executed and what version (including) commit
-    hash of the genologics package used. Since EPP scripts are often ran
-    automatically by the genologics LIMS client, the stdout and stderr is 
+    hash of the pyclarity_lims package used. Since EPP scripts are often ran
+    automatically by the pyclarity_lims LIMS client, the stdout and stderr is
     captured and logged within this CM. Stderr is duplicated so that the
     last line can be shown in the GUI. In order to track multiple runs
-    of the same process from the genologics LIMS GUI, the previous log 
+    of the same process from the pyclarity_lims LIMS GUI, the previous log
     files can be prepended. Also a main log file can be used that is
     supposed to be common for all scripts executed on the server.
     
     """
 
-    PACKAGE = 'genologics'
+    PACKAGE = 'pyclarity_lims'
     def __enter__(self):
         logging.info('Executing file: {0}'.format(sys.argv[0]))
         logging.info('with parameters: {0}'.format(sys.argv[1:]))

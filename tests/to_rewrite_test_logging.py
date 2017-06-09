@@ -5,7 +5,7 @@ from os.path import isdir
 import os
 import sys
 from unittest import TestCase
-from genologics.epp import EppLogger
+from pyclarity_lims.epp import EppLogger
 
 file_path = os.path.realpath(__file__)
 test_dir_path = os.path.dirname(file_path)
