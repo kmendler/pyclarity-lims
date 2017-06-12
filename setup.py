@@ -1,21 +1,13 @@
+from os.path import join, abspath, dirname
 from setuptools import setup, find_packages
-from pyclarity_lims.version import __version__
-import subprocess
 
-# Fetch version from git tags.
-# if git is not available (PyPi package), use stored version.py.
 
-try:
-    version = subprocess.Popen(["git", "describe", "--abbrev=0"], stdout=subprocess.PIPE, universal_newlines=True).communicate()[0].rstrip()
-    version = version.decode("utf-8")
-except:
-    version = __version__
 
-try:
-    with open("requirements.txt") as rq:
-        requires=rq.readlines()
-except:
-    requires=["requests"]
+requirements_txt = join(abspath(dirname(__file__)), 'requirements.txt')
+requirements = [l.strip() for l in open(requirements_txt) if l and not l.startswith('#')]
+
+version = '0.3.12'
+
 
 setup(name='pyclarity_lims',
     version=version,
