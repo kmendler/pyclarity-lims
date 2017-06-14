@@ -12,7 +12,6 @@ from pyclarity_lims.descriptors import StringDescriptor, UdfDictionaryDescriptor
     InputOutputMapList, LocationDescriptor, IntegerAttributeDescriptor, \
     StringAttributeDescriptor, EntityListDescriptor, StringListDescriptor, PlacementDictionaryDescriptor, \
     ReagentLabelList, AttributeListDescriptor, StringDictionaryDescriptor, OutputPlacementListDescriptor
-
 try:
     from urllib.parse import urlsplit, urlparse, parse_qs, urlunparse
 except ImportError:
@@ -235,6 +234,8 @@ class Entity(object):
     _TAG = None
     _URI = None
     _PREFIX = None
+    _CREATION_PREFIX = None
+    _CREATION_TAG = None
 
     def __new__(cls, lims, uri=None, id=None, _create_new=False):
         if not uri:
@@ -297,15 +298,18 @@ class Entity(object):
         self.lims.post(self.uri, data)
 
     @classmethod
-    def _create(cls, lims, creation_tag=None, **kwargs):
+    def _create(cls, lims, **kwargs):
         """Create an instance from attributes and return it"""
         instance = cls(lims, _create_new=True)
-        if creation_tag:
-            instance.root = ElementTree.Element(nsmap(cls._PREFIX + ':' + creation_tag))
-        elif cls._TAG:
-            instance.root = ElementTree.Element(nsmap(cls._PREFIX + ':' + cls._TAG))
-        else:
-            instance.root = ElementTree.Element(nsmap(cls._PREFIX + ':' + cls.__name__.lower()))
+        prefix = cls._CREATION_PREFIX
+        if prefix is None:
+            prefix = cls._PREFIX
+        tag = cls._CREATION_TAG
+        if tag is None:
+            tag = cls._TAG
+        if tag is None:
+            tag = cls.__name__.lower()
+        instance.root = ElementTree.Element(nsmap(prefix + ':' + tag))
         for attribute in kwargs:
             if hasattr(instance, attribute):
                 setattr(instance, attribute, kwargs.get(attribute))
@@ -315,9 +319,9 @@ class Entity(object):
         return instance
 
     @classmethod
-    def create(cls, lims, creation_tag=None, **kwargs):
+    def create(cls, lims, **kwargs):
         """Create an instance from attributes then post it to the LIMS"""
-        instance = cls._create(lims, creation_tag=None, **kwargs)
+        instance = cls._create(lims, **kwargs)
         data = lims.tostring(ElementTree.ElementTree(instance.root))
         instance.root = lims.post(uri=lims.get_uri(cls._URI), data=data)
         instance._uri = instance.root.attrib['uri']
@@ -406,6 +410,7 @@ class Sample(Entity):
 
     _URI = 'samples'
     _PREFIX = 'smp'
+    _CREATION_TAG = 'samplecreation'
 
     name           = StringDescriptor('name')
     date_received  = StringDescriptor('date-received')
@@ -426,7 +431,7 @@ class Sample(Entity):
         """Create an instance of Sample from attributes then post it to the LIMS"""
         if not isinstance(container, Container):
             raise TypeError('%s is not of type Container'%container)
-        instance = super(Sample, cls)._create(lims, creation_tag='samplecreation', **kwargs)
+        instance = super(Sample, cls)._create(lims, **kwargs)
 
         location = ElementTree.SubElement(instance.root, 'location')
         ElementTree.SubElement(location, 'container', dict(uri=container.uri))
@@ -495,9 +500,9 @@ class Udfconfig(Entity):
     first_preset_is_default_value = BooleanDescriptor('first-preset-is-default-value')
     show_in_tables                = BooleanDescriptor('show-in-tables')
     is_editable                   = BooleanDescriptor('is-editable')
-    is_deviation                  = BooleanDescriptor('is-deviation') 
+    is_deviation                  = BooleanDescriptor('is-deviation')
     is_controlled_vocabulary      = BooleanDescriptor('is-controlled-vocabulary')
-    presets                       = StringListDescriptor('preset') 
+    presets                       = StringListDescriptor('preset')
 
 
 
@@ -506,6 +511,7 @@ class Process(Entity):
 
     _URI = 'processes'
     _PREFIX = 'prc'
+    _CREATION_PREFIX = 'prx'
 
     type              = EntityDescriptor('type', Processtype)
     date_run          = StringDescriptor('date-run')
@@ -584,8 +590,8 @@ class Process(Entity):
         return [a for a in artifacts if a.output_type == 'ResultFile']
 
     def analytes(self):
-        """Retreving the output Analytes of the process, if existing. 
-        If the process is not producing any output analytes, the input 
+        """Retreving the output Analytes of the process, if existing.
+        If the process is not producing any output analytes, the input
         analytes are returned. Input/Output is returned as a information string.
         Makes aggregate processes and normal processes look the same."""
         info = 'Output'
@@ -611,7 +617,7 @@ class Process(Entity):
 
     @property
     def step(self):
-        """Retrive the Step coresponding to this process. They share the same id"""
+        """Retrieve the Step corresponding to this process. They share the same id"""
         return Step(self.lims, id=self.id)
 
 
@@ -804,19 +810,26 @@ class StepDetails(Entity):
     udt = UdtDictionaryDescriptor(nesting=['fields'])
 
 
+class StepProgramStatus(Entity):
+    """Status display in the step"""
+
+    status  = StringDescriptor('status')
+    message = StringDescriptor('message')
+
+
 class Step(Entity):
-    "Step, as defined by the pyclarity_lims API."
+    "Step, as defined by the genologics API."
 
     _URI = 'steps'
     _PREFIX = 'stp'
+    _CREATION_TAG = 'step-creation'
 
-    current_state = StringAttributeDescriptor('current-state')
-    _reagent_lots = EntityDescriptor('reagent-lots', StepReagentLots)
-    actions       = EntityDescriptor('actions', StepActions)
-    placements    = EntityDescriptor('placements', StepPlacements)
-    details       = EntityDescriptor('details', StepDetails)
-
-    #program_status     = EntityDescriptor('program-status',StepProgramStatus)
+    current_state  = StringAttributeDescriptor('current-state')
+    _reagent_lots  = EntityDescriptor('reagent-lots', StepReagentLots)
+    actions        = EntityDescriptor('actions', StepActions)
+    placements     = EntityDescriptor('placements', StepPlacements)
+    details        = EntityDescriptor('details', StepDetails)
+    program_status = EntityDescriptor('program-status', StepProgramStatus)
 
     def advance(self):
         self.root = self.lims.post(
@@ -827,6 +840,30 @@ class Step(Entity):
     @property
     def reagent_lots(self):
         return self._reagent_lots.reagent_lots
+
+    def process(self):
+        """Retrieve the Process corresponding to this Step. They share the same id"""
+        return Process(self.lims, id=self.id)
+
+    @classmethod
+    def create(cls, lims, inputs, container_type_name=None, reagent_category=None, **kwargs):
+        instance = super(Step, cls)._create(lims, **kwargs)
+        if container_type_name:
+            container_type_node = ElementTree.SubElement(instance.root, 'container-type')
+            container_type_node.text = container_type_name
+        if reagent_category:
+            reagent_category_node = ElementTree.SubElement(instance.root, 'reagent_category')
+            reagent_category_node.text = reagent_category
+        inputs_node = ElementTree.SubElement(instance.root, 'inputs')
+        for artifact in inputs:
+            if not isinstance(artifact, Artifact):
+                raise TypeError('Input must be of type Artifact not %s.' % type(artifact))
+            input_node = ElementTree.SubElement(inputs_node, 'input')
+            input_node.attrib['uri'] = artifact.uri
+        data = lims.tostring(ElementTree.ElementTree(instance.root))
+        instance.root = lims.post(uri=lims.get_uri(cls._URI), data=data)
+        instance._uri = instance.root.attrib['uri']
+        return instance
 
 
 class ProtocolStep(Entity):
@@ -904,4 +941,3 @@ StepActions.step         = EntityDescriptor('step', Step)
 Stage.workflow           = EntityDescriptor('workflow', Workflow)
 Artifact.workflow_stages = EntityListDescriptor(tag='workflow-stage', klass=Stage, nesting=['workflow-stages'])
 Step.configuration       = EntityDescriptor('configuration', ProtocolStep)
-
