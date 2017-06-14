@@ -2,9 +2,9 @@ from sys import version_info
 from unittest import TestCase
 from xml.etree import ElementTree
 
-from genologics.entities import StepActions, Researcher, Artifact, \
+from pyclarity_lims.entities import StepActions, Researcher, Artifact, \
     Step, StepPlacements, Container, Stage, ReagentKit, ReagentLot, Sample, Project
-from genologics.lims import Lims
+from pyclarity_lims.lims import Lims
 
 if version_info[0] == 2:
     from mock import patch, Mock
@@ -16,7 +16,7 @@ url = 'http://testgenologics.com:4040'
 ########
 # Entities in XML
 generic_artifact_xml = """<?xml version='1.0' encoding='utf-8'?>
-<art:artifact xmlns:art="http://genologics.com/ri/artifact"  xmlns:file="http://genologics.com/ri/file" xmlns:udf="http://genologics.com/ri/userdefined"  uri="{url}/api/v2/artifacts/a1" limsid="a1">
+<art:artifact xmlns:art="http://pyclarity_lims.com/ri/artifact"  xmlns:file="http://pyclarity_lims.com/ri/file" xmlns:udf="http://pyclarity_lims.com/ri/userdefined"  uri="{url}/api/v2/artifacts/a1" limsid="a1">
 <name>test_sample1</name>
 <type>Analyte</type>
 <output-type>Analyte</output-type>
@@ -36,7 +36,7 @@ generic_artifact_xml = """<?xml version='1.0' encoding='utf-8'?>
 </art:artifact>"""
 
 generic_step_placements_xml = """<?xml version='1.0' encoding='utf-8'?>
-<stp:placements xmlns:stp="http://genologics.com/ri/step" uri="{url}/steps/s1/placements">
+<stp:placements xmlns:stp="http://pyclarity_lims.com/ri/step" uri="{url}/steps/s1/placements">
   <step uri="{url}/steps/s1" />
   <configuration uri="{url}/configuration/protocols/1/steps/1">Step name</configuration>
   <selected-containers>
@@ -59,7 +59,7 @@ generic_step_placements_xml = """<?xml version='1.0' encoding='utf-8'?>
 </stp:placements>"""
 
 generic_reagentkit_xml = """<?xml version='1.0' encoding='utf-8'?>
-<kit:reagent-kit xmlns:kit="http://genologics.com/ri/reagentkit" uri="{url}:8080/api/v2/reagentkits/r1">
+<kit:reagent-kit xmlns:kit="http://pyclarity_lims.com/ri/reagentkit" uri="{url}:8080/api/v2/reagentkits/r1">
 <name>regaentkitname</name>
 <supplier>reagentProvider</supplier>
 <website>www.reagentprovider.com</website>
@@ -67,7 +67,7 @@ generic_reagentkit_xml = """<?xml version='1.0' encoding='utf-8'?>
 </kit:reagent-kit>"""
 
 generic_reagentlot_xml = """<?xml version='1.0' encoding='utf-8'?>
-<lot:reagent-lot xmlns:lot="http://genologics.com/ri/reagentlot" limsid="l1" uri="{url}/api/v2/reagentlots/l1">
+<lot:reagent-lot xmlns:lot="http://pyclarity_lims.com/ri/reagentlot" limsid="l1" uri="{url}/api/v2/reagentlots/l1">
 <reagent-kit uri="{url}/api/v2/reagentkits/r1" name="kitname"/>
 <name>kitname</name>
 <lot-number>100</lot-number>
@@ -80,7 +80,7 @@ generic_reagentlot_xml = """<?xml version='1.0' encoding='utf-8'?>
 <usage-count>1</usage-count>
 </lot:reagent-lot>"""
 
-generic_step_actions_xml = """<stp:actions xmlns:stp="http://genologics.com/ri/step" uri="...">
+generic_step_actions_xml = """<stp:actions xmlns:stp="http://pyclarity_lims.com/ri/step" uri="...">
   <step rel="..." uri="{url}/steps/s1">
   </step>
   <configuration uri="{url}/config/1">...</configuration>
@@ -116,7 +116,7 @@ generic_step_actions_xml = """<stp:actions xmlns:stp="http://genologics.com/ri/s
   </escalation>
 </stp:actions>"""
 
-generic_step_actions_no_escalation_xml = """<stp:actions xmlns:stp="http://genologics.com/ri/step" uri="...">
+generic_step_actions_no_escalation_xml = """<stp:actions xmlns:stp="http://pyclarity_lims.com/ri/step" uri="...">
   <step rel="..." uri="{url}/steps/s1">
   </step>
   <configuration uri="{url}/config/1">...</configuration>
@@ -127,7 +127,7 @@ generic_step_actions_no_escalation_xml = """<stp:actions xmlns:stp="http://genol
 </stp:actions>"""
 
 generic_sample_creation_xml = """
-<smp:samplecreation xmlns:smp="http://genologics.com/ri/sample" limsid="s1" uri="{url}/api/v2/samples/s1">
+<smp:samplecreation xmlns:smp="http://pyclarity_lims.com/ri/sample" limsid="s1" uri="{url}/api/v2/samples/s1">
   <location>
     <container limsid="cont1" uri="{url}/api/v2/containers/cont1">
     </container>
@@ -279,7 +279,7 @@ class TestReagentKits(TestEntities):
             assert r.archived == False
 
     def test_create_entity(self):
-        with patch('genologics.lims.requests.post', return_value=Mock(content=self.reagentkit_xml, status_code=201)):
+        with patch('pyclarity_lims.lims.requests.post', return_value=Mock(content=self.reagentkit_xml, status_code=201)):
             r = ReagentKit.create(self.lims, name='regaentkitname', supplier='reagentProvider',
                                   website='www.reagentprovider.com', archived=False)
         self.assertRaises(TypeError, ReagentKit.create, self.lims, error='test')
@@ -300,7 +300,7 @@ class TestReagentLots(TestEntities):
     def test_create_entity(self):
         with patch('requests.Session.get', return_value=Mock(content=self.reagentkit_xml, status_code=200)):
             r = ReagentKit(uri=self.lims.get_uri('reagentkits', 'r1'), lims=self.lims)
-        with patch('genologics.lims.requests.post',
+        with patch('pyclarity_lims.lims.requests.post',
                    return_value=Mock(content=self.reagentlot_xml, status_code=201)) as patch_post:
             l = ReagentLot.create(
                     self.lims,
@@ -319,7 +319,7 @@ class TestSample(TestEntities):
     sample_creation = generic_sample_creation_xml.format(url=url)
 
     def test_create_entity(self):
-        with patch('genologics.lims.requests.post',
+        with patch('pyclarity_lims.lims.requests.post',
                    return_value=Mock(content=self.sample_creation, status_code=201)) as patch_post:
             l = Sample.create(
                 self.lims,
@@ -329,7 +329,7 @@ class TestSample(TestEntities):
                 name='s1',
             )
             data = '''<?xml version=\'1.0\' encoding=\'utf-8\'?>
-            <smp:samplecreation xmlns:smp="http://genologics.com/ri/sample">
+            <smp:samplecreation xmlns:smp="http://pyclarity_lims.com/ri/sample">
             <name>s1</name>
             <project uri="project" />
             <location>

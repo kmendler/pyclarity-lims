@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from requests.exceptions import HTTPError
 
-from genologics.lims import Lims
+from pyclarity_lims.lims import Lims
 try:
     callable(1)
 except NameError: # callable() doesn't exist in Python 3.0 and 3.1
@@ -24,16 +24,16 @@ class TestLims(TestCase):
     username = 'test'
     password = 'password'
     sample_xml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<smp:samples xmlns:smp="http://genologics.com/ri/sample">
+<smp:samples xmlns:smp="http://pyclarity_lims.com/ri/sample">
     <sample uri="{url}/api/v2/samples/test_sample" limsid="test_id"/>
 </smp:samples>
 """.format(url=url)
     error_xml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<exc:exception xmlns:exc="http://genologics.com/ri/exception">
+<exc:exception xmlns:exc="http://pyclarity_lims.com/ri/exception">
     <message>Generic error message</message>
 </exc:exception>"""
     error_no_msg_xml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<exc:exception xmlns:exc="http://genologics.com/ri/exception">
+<exc:exception xmlns:exc="http://pyclarity_lims.com/ri/exception">
 </exc:exception>"""
 
 
@@ -94,8 +94,8 @@ class TestLims(TestCase):
     def test_upload_new_file(self, mocked_open, mocked_isfile):
         lims = Lims(self.url, username=self.username, password=self.password)
         xml_intro = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>"""
-        file_start = """<file:file xmlns:file="http://genologics.com/ri/file">"""
-        file_start2 = """<file:file xmlns:file="http://genologics.com/ri/file" uri="{url}/api/v2/files/40-3501" limsid="40-3501">"""
+        file_start = """<file:file xmlns:file="http://pyclarity_lims.com/ri/file">"""
+        file_start2 = """<file:file xmlns:file="http://pyclarity_lims.com/ri/file" uri="{url}/api/v2/files/40-3501" limsid="40-3501">"""
         attached = """    <attached-to>{url}/api/v2/samples/test_sample</attached-to>"""
         upload = """    <original-location>filename_to_upload</original-location>"""
         content_loc = """    <content-location>sftp://{url}/opt/gls/clarity/users/glsftp/clarity/samples/test_sample/test</content-location>"""

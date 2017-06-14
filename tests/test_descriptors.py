@@ -5,12 +5,12 @@ from xml.etree import ElementTree
 
 import pytest
 
-from genologics.constants import nsmap
-from genologics.descriptors import StringDescriptor, StringAttributeDescriptor, StringListDescriptor, \
+from pyclarity_lims.constants import nsmap
+from pyclarity_lims.descriptors import StringDescriptor, StringAttributeDescriptor, StringListDescriptor, \
     StringDictionaryDescriptor, IntegerDescriptor, BooleanDescriptor, UdfDictionary, EntityDescriptor, \
     InputOutputMapList, EntityListDescriptor, PlacementDictionary, EntityList, SubTagDictionary, ExternalidList
-from genologics.entities import Artifact
-from genologics.lims import Lims
+from pyclarity_lims.entities import Artifact
+from pyclarity_lims.lims import Lims
 
 if version_info[0] == 2:
     from mock import Mock
@@ -253,14 +253,14 @@ class TestStringDictionaryDescriptor(TestDescriptor):
 class TestUdfDictionary(TestCase):
     def setUp(self):
         et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<test-entry xmlns:udf="http://genologics.com/ri/userdefined">
+<test-entry xmlns:udf="http://pyclarity_lims.com/ri/userdefined">
 <udf:field type="String" name="test">stuff</udf:field>
 <udf:field type="Numeric" name="how much">42</udf:field>
 <udf:field type="Boolean" name="really?">true</udf:field>
 </test-entry>""")
         self.instance1 = Mock(root=et)
         et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<test-entry xmlns:udf="http://genologics.com/ri/userdefined">
+<test-entry xmlns:udf="http://pyclarity_lims.com/ri/userdefined">
 <nesting>
 <udf:field type="String" name="test">stuff</udf:field>
 <udf:field type="Numeric" name="how much">42</udf:field>
@@ -273,7 +273,7 @@ class TestUdfDictionary(TestCase):
         self.dict_fail = UdfDictionary(self.instance2)
 
         self.empty_et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-        <test-entry xmlns:udf="http://genologics.com/ri/userdefined">
+        <test-entry xmlns:udf="http://pyclarity_lims.com/ri/userdefined">
         </test-entry>""")
 
     def _get_udf_value(self, udf_dict, key):
@@ -375,7 +375,7 @@ class TestPlacementDictionary(TestCase):
 
     def setUp(self):
         et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<test-entry xmlns:udf="http://genologics.com/ri/userdefined">
+<test-entry xmlns:udf="http://pyclarity_lims.com/ri/userdefined">
 <placement uri="http://testgenologics.com:4040/api/v2/artifacts/a1" limsid="a1">
 <value>A:1</value>
 </placement>
@@ -400,7 +400,7 @@ class TestSubTagDictionary(TestCase):
 
     def setUp(self):
         et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<test-entry xmlns:udf="http://genologics.com/ri/userdefined">
+<test-entry xmlns:udf="http://pyclarity_lims.com/ri/userdefined">
 <test-tag>
 <key1>value1</key1>
 </test-tag>
@@ -488,7 +488,7 @@ class TestEntityList(TestCase):
 class TestInputOutputMapList(TestCase):
     def setUp(self):
         et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<test-entry xmlns:udf="http://genologics.com/ri/userdefined">
+<test-entry xmlns:udf="http://pyclarity_lims.com/ri/userdefined">
 <input-output-map>
 <input uri="http://testgenologics.com:4040/api/v2/artifacts/1" limsid="1">
 <parent-process uri="http://testgenologics.com:4040//api/v2/processes/1" limsid="1"/>
@@ -513,8 +513,8 @@ class TestExternalidList(TestCase):
     def setUp(self):
         et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     <test-entry>
-    <ri:externalid xmlns:ri="http://genologics.com/ri" id="1" uri="http://testgenologics.com:4040/api/v2/external/1" />
-    <ri:externalid xmlns:ri="http://genologics.com/ri" id="2" uri="http://testgenologics.com:4040/api/v2/external/2" />
+    <ri:externalid xmlns:ri="http://pyclarity_lims.com/ri" id="1" uri="http://testgenologics.com:4040/api/v2/external/1" />
+    <ri:externalid xmlns:ri="http://pyclarity_lims.com/ri" id="2" uri="http://testgenologics.com:4040/api/v2/external/2" />
     </test-entry>
     """)
         self.lims = Lims('http://testgenologics.com:4040', username='test', password='password')

@@ -218,7 +218,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'genologics', u'Genologics Documentation',
+    ('index', 'pyclarity_lims', u'Genologics Documentation',
      [u'Per Kraulis, Johannes Alneberg'], 1)
 ]
 

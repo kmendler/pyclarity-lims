@@ -6,7 +6,7 @@ Per Kraulis, Science for Life Laboratory, Stockholm, Sweden.
 Copyright (C) 2012 Per Kraulis
 """
 
-from genologics.constants import nsmap
+from pyclarity_lims.constants import nsmap
 
 try:
     from urllib.parse import urlsplit, urlparse, parse_qs, urlunparse
@@ -236,7 +236,7 @@ class PlacementDictionary(XmlDictionary):
         self._elems = self.rootnode(self.instance).findall('placement')
 
     def _parse_element(self, element, **kwargs):
-        from genologics.entities import Artifact
+        from pyclarity_lims.entities import Artifact
         key = element.find('value').text
         dict.__setitem__(self, key, Artifact(self.instance.lims, uri=element.attrib['uri']))
 
@@ -457,7 +457,7 @@ class XmlInputOutputMapList(TagXmlList):
         list.append(self, (input, output))
 
     def _get_dict(self, lims, node):
-        from genologics.entities import Artifact, Process
+        from pyclarity_lims.entities import Artifact, Process
         if node is None: return None
         result = dict()
         for key in ['limsid', 'output-type', 'output-generation-type']:
@@ -500,7 +500,7 @@ class OutputPlacementList(TagXmlList):
         return node
 
     def _parse_element(self, element, lims, **kwargs):
-        from genologics.entities import Artifact, Container
+        from pyclarity_lims.entities import Artifact, Container
         input = Artifact(lims, uri=element.attrib['uri'])
         loc = element.find('location')
         location = (None, None)
@@ -667,7 +667,7 @@ class LocationDescriptor(TagDescriptor):
     """
 
     def __get__(self, instance, cls):
-        from genologics.entities import Container
+        from pyclarity_lims.entities import Container
         instance.get()
         node = self.rootnode(instance).find(self.tag)
         uri = node.find('container').attrib['uri']
