@@ -24,210 +24,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class SampleHistory:
-    """Class handling the history generation for a given sample/artifact
-    AFAIK the only fields of the history that are read are proc.type and outart"""
-
-    def __init__(self, sample_name=None, output_artifact=None, input_artifact=None, lims=None, pro_per_art=None,
-                 test=False):
-        self.processes_per_artifact = pro_per_art
-        if lims:
-            self.lims = lims
-            if not (test):
-                # this is now the default
-                self.sample_name = sample_name
-                self.alternate_history(output_artifact, input_artifact)
-                self.art_map = None
-            elif (sample_name) and pro_per_art:
-                self.sample_name = sample_name
-                self.make_sample_artifact_map()
-                if output_artifact:
-                    self.get_analyte_hist_sorted(output_artifact, input_artifact)
-        else:
-            logger.error("Tried to build History without lims")
-            raise AttributeError("History cannot be computed without a valid lims object")
-
-    def control(self):
-        """this can be used to check the content of the object.
-        """
-        logger.info("SAMPLE NAME: {}".format(self.sample_name))
-        logger.info("outart : {}".format(self.history_list[0]))
-        # logger.info ("\nmap :")
-        # for key, value in self.art_map.iteritems():
-        #    logger.info(value[1]+"->"+value[0].id+"->"+key)
-        logger.info("\nHistory :\n\n")
-        logger.info("Input\tProcess\tProcess info")
-        for key, dict in self.history.items():
-            logger.info(key)
-            for key2, dict2 in dict.items():
-                logger.info("\t{}".format(key2))
-                for key, value in dict2.items():
-                    logger.info("\t\t{0}->{1}".format(key, (value if value is not None else "None")))
-        logger.info("\nHistory List")
-        for art in self.history_list:
-            logger.info(art)
-
-    def make_sample_artifact_map(self):
-        """samp_art_map: connects each output artifact for a specific sample to its
-        corresponding process and input artifact assuming, for a given sample,
-        one input -> one process -> one output
-        This function starts from the output,
-        and creates an entry like this : output -> (process, input)"""
-        samp_art_map = {}
-        if self.sample_name:
-            artifacts = self.lims.get_artifacts(sample_name=self.sample_name, type='Analyte', resolve=False)
-            for one_art in artifacts:
-                input_arts = one_art.input_artifact_list()
-                for input_art in input_arts:
-                    for samp in input_art.samples:
-                        if samp.name == self.sample_name:
-                            samp_art_map[one_art.id] = (one_art.parent_process, input_art.id)
-
-        self.art_map = samp_art_map
-
-    def alternate_history(self, out_art, in_art=None):
-        """This is a try at another way to generate the history.
-        This one iterates over Artifact.parent_process and Process.all_inputs()
-        Then, it takes all the child processes for each input (because we want
-        qc processes too) and puts everything in a dictionnary.
-        """
-        history = {}
-        hist_list = []
-        # getting the list of all expected analytes.
-        artifacts = self.lims.get_artifacts(sample_name=self.sample_name, type='Analyte', resolve=False)
-        processes = []
-        inputs = []
-        if in_art:
-            # If theres an input artifact given, I need to make a loop for this one, before treating it as an output
-            starting_art = in_art
-            inputs.append(in_art)
-            history[in_art] = {}
-            # If there is a loacl map, use it. else, query the lims.
-            if self.processes_per_artifact and in_art in self.processes_per_artifact:
-                valid_pcs = self.processes_per_artifact[in_art]
-            else:
-                valid_pcs = self.lims.get_processes(inputartifactlimsid=in_art)
-
-            for tempProcess in valid_pcs:
-                history[in_art][tempProcess.id] = {'date': tempProcess.date_run,
-                                                   'id': tempProcess.id,
-                                                   'outart': (out_art if out_art in [out.id for out in tempProcess.all_outputs()] else None),
-                                                   'inart': in_art,
-                                                   'type': tempProcess.type.id,
-                                                   'name': tempProcess.type.name}
-        else:
-            starting_art = out_art
-        # main iteration
-        # it is quite heavy on logger at info level
-        not_done = True
-        while not_done:
-            logger.info("looking for " + (starting_art))
-            not_done = False
-            for o in artifacts:
-                logger.info(o.id)
-                if o.id == starting_art:
-                    if o.parent_process is None:
-                        # flow control : if there is no parent process, we can stop iterating, we're done.
-                        not_done = False
-                        break  # breaks the for artifacts, we are done anyway.
-                    else:
-                        not_done = True  # keep the loop running
-                    logger.info("found it")
-                    processes.append(o.parent_process)
-                    logger.info("looking for inputs of " + o.parent_process.id)
-                    for i in o.parent_process.all_inputs():
-                        logger.info(i.id)
-                        if i in artifacts:
-                            history[i.id] = {}
-                            for tempProcess in (self.processes_per_artifact[i.id] if self.processes_per_artifact else self.lims.get_processes(inputartifactlimsid=i.id)):  # If there is a loacl map, use it. else, query the lims.
-                                history[i.id][tempProcess.id] = {'date': tempProcess.date_run,
-                                                                 'id': tempProcess.id,
-                                                                 'outart': (
-                                                                 o.id if tempProcess.id == o.parent_process.id else None),
-                                                                 'inart': i.id,
-                                                                 'type': tempProcess.type.id,
-                                                                 'name': tempProcess.type.name}
-
-                            logger.info("found input " + i.id)
-                            inputs.append(
-                                i.id)  # this will be the sorted list of artifacts used to rebuild the history in order
-                            # while increment
-                            starting_art = i.id
-
-                            break  # break the for allinputs, if we found the right one
-                    break  # breaks the for artifacts if we matched the current one
-        self.history = history
-        self.history_list = inputs
-
-    def get_analyte_hist_sorted(self, out_artifact, input_art=None):
-        """Makes a history map of an artifac, using the samp_art_map
-        of the corresponding sample.
-        The samp_art_map object is built up from analytes. This means that it will not
-        contain output-input info for processes wich have only files as output.
-        This is logical since the samp_art_map object is used for building up the ANALYTE
-        history of a sample. If you want to make the analyte history based on a
-        resultfile, that is; if you want to give a resultfile as out_artifact here,
-        and be given the historylist of analytes and processes for that file, you
-        will also have to give the input artifact for the process that generated
-        the resultfile for wich you want to get the history. In other words, if you
-        want to get the History of the folowing scenario:
-
-        History --- > Input_analyte -> Process -> Output_result_file
-
-        then the arguments to this function should be:
-        out_artifact = Output_result_file
-        input_art = Input_analyte
-
-        If you instead want the History of the folowing scenario:
-
-        History --- > Input_analyte -> Process -> Output_analyte
-
-        then you can skip the input_art argument and only set:
-        out_artifact = Output_analyte
-        """
-        history = {}
-        hist_list = []
-        if input_art:
-            # In_art = Artifact(lims,id=input_art)
-            # try:
-            #     pro = In_art.parent_process.id
-            # except:
-            #     pro = None
-            history, out_artifact = self._add_out_art_process_conection_list(input_art, out_artifact, history)
-            hist_list.append(input_art)
-        while out_artifact in self.art_map:
-            pro, input_art = self.art_map[out_artifact]
-            hist_list.append(input_art)
-            history, out_artifact = self._add_out_art_process_conection_list(input_art, out_artifact, history)
-        self.history = history
-        self.history_list = hist_list
-
-    def _add_out_art_process_conection_list(self, input_art, out_artifact, history={}):
-        """This function populates the history dict with process info per artifact.
-        Maps an artifact to all the processes where its used as input and adds this
-        info to the history dict. Observe that the output artifact for the input
-        artifact in the historychain is given as input to this function. All
-        processes that the input artifact has been involved in, but that are not
-        part of the historychain get the outart set to None. This is very important."""
-        # Use the local process map if we have one, else, query the lims
-        for process in self.processes_per_artifact[input_art] if self.processes_per_artifact else lims.get_processes(
-                inputartifactlimsid=input_art):
-            # outputs = map(lambda a: (a.id), process.all_outputs())
-            outputs = [a.id for a in process.all_outputs()]
-            outart = out_artifact if out_artifact in outputs else None
-            step_info = {'date': process.date_run,
-                         'id': process.id,
-                         'outart': outart,
-                         'inart': input_art,
-                         'type': process.type.id,
-                         'name': process.type.name}
-            if input_art in history:
-                history[input_art][process.id] = step_info
-            else:
-                history[input_art] = {process.id: step_info}
-        return history, input_art
-
-
 class Entity(object):
     "Base class for the entities in the LIMS database."
 
@@ -817,6 +613,15 @@ class StepProgramStatus(Entity):
     message = StringDescriptor('message')
 
 
+class StepAvailableProgram():
+    def __init__(self, lims, name, uri):
+        self.lims = lims
+        self.name = name
+        self.uri = uri
+
+    def trigger(self):
+        self.lims.post(self.uri)
+
 class Step(Entity):
     "Step, as defined by the genologics API."
 
@@ -830,6 +635,9 @@ class Step(Entity):
     placements     = EntityDescriptor('placements', StepPlacements)
     details        = EntityDescriptor('details', StepDetails)
     program_status = EntityDescriptor('program-status', StepProgramStatus)
+    date_started   = StringDescriptor('date-started')
+    date_completed = StringDescriptor('date-completed')
+    _available_programs = None
 
     def advance(self):
         self.root = self.lims.post(
@@ -839,7 +647,20 @@ class Step(Entity):
 
     @property
     def reagent_lots(self):
-        return self._reagent_lots.reagent_lots
+        if self._reagent_lots:
+            return self._reagent_lots.reagent_lots
+
+    @property
+    def available_programs(self):
+        """New in REST API v2 r25"""
+        self.get()
+        if not self._available_programs:
+            self._available_programs = []
+            available_programs_et = self.root.find('available-programs')
+            if available_programs_et:
+                for ap in available_programs_et.findall('available-program'):
+                    self._available_programs.append(StepAvailableProgram(self.lims, ap.attrib['name'],  ap.attrib['uri']))
+        return self._available_programs
 
     def process(self):
         """Retrieve the Process corresponding to this Step. They share the same id"""

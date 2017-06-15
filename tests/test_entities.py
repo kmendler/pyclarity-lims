@@ -80,6 +80,21 @@ generic_reagentlot_xml = """<?xml version='1.0' encoding='utf-8'?>
 <usage-count>1</usage-count>
 </lot:reagent-lot>"""
 
+generic_step = """<?xml version='1.0' encoding='utf-8'?>
+<stp:step xmlns:stp="http://pyclarity_lims.com/ri/step" current-state="Completed" limsid="{stepid}" uri="{url}/api/v2/steps/{stepid}">
+<configuration uri="{url}/api/v2/configuration/protocols/p1/steps/p1s1">My fancy protocol</configuration>
+<date-started>2016-11-22T10:43:32.857+00:00</date-started>
+<date-completed>2016-11-22T14:31:14.100+00:00</date-completed>
+<actions uri="{url}/api/v2/steps/{stepid}/actions"/>
+<placements uri="{url}/api/v2/steps/{stepid}/placements"/>
+<program-status uri="{url}/api/v2/steps/{stepid}/programstatus"/>
+<details uri="{url}/api/v2/steps/{stepid}/details"/>
+<available-programs>
+<available-program name="program1" uri="{url}/api/v2/steps/{stepid}/trigger/t1"/>
+<available-program name="program2" uri="{url}/api/v2/steps/{stepid}/trigger/t2"/>
+</available-programs>
+</stp:step>"""
+
 generic_step_actions_xml = """<stp:actions xmlns:stp="http://pyclarity_lims.com/ri/step" uri="...">
   <step rel="..." uri="{url}/steps/s1">
   </step>
@@ -246,6 +261,38 @@ class TestStepPlacements(TestEntities):
             new_placements = [[a1, (c2, '1:1')], [a2, (c2, '1:1')]]
             s.placement_list = new_placements
             assert elements_equal(s.root, ElementTree.fromstring(self.modcont_step_placements_xml))
+
+class TestStep(TestEntities):
+    step_xml = generic_step.format(url=url, stepid='s1')
+
+    def test_create(self):
+        inputs = [Artifact(self.lims, id='a1'), Artifact(self.lims, id='a2')]
+
+        with patch('pyclarity_lims.lims.requests.post',
+                   return_value=Mock(content=self.step_xml, status_code=201)) as patch_post:
+            Step.create(self.lims, inputs=inputs)
+            data = '''<?xml version='1.0' encoding='utf-8'?>
+            <stp:step-creation xmlns:stp="http://pyclarity_lims.com/ri/step">
+                <inputs>
+                    <input uri="http://testgenologics.com:4040/api/v2/artifacts/a1" />
+                    <input uri="http://testgenologics.com:4040/api/v2/artifacts/a2" />
+                </inputs>
+            </stp:step-creation>
+            '''
+            assert elements_equal(ElementTree.fromstring(patch_post.call_args_list[0][1]['data']), ElementTree.fromstring(data))
+
+    def test_parse_entity(self):
+        with patch('requests.Session.get', return_value=Mock(content=self.step_xml, status_code=200)):
+            s = Step(self.lims, id='s1')
+            s.get()
+        assert [p.name for p in s.available_programs] == ['program1', 'program2']
+        assert s.date_started == '2016-11-22T10:43:32.857+00:00'
+        assert s.date_completed == '2016-11-22T14:31:14.100+00:00'
+        assert s.current_state == 'Completed'
+        assert s.actions.uri == 'http://testgenologics.com:4040/api/v2/steps/s1/actions'
+        assert s.details.uri == 'http://testgenologics.com:4040/api/v2/steps/s1/details'
+        assert s.placements.uri == 'http://testgenologics.com:4040/api/v2/steps/s1/placements'
+        assert s.program_status.uri == 'http://testgenologics.com:4040/api/v2/steps/s1/programstatus'
 
 
 class TestArtifacts(TestEntities):
