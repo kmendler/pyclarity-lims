@@ -385,6 +385,14 @@ class Lims(object):
         params.update(self._get_params_udf(udf=udf, udtname=udtname, udt=udt))
         return self._get_instances(Container, add_info=add_info, params=params)
 
+    def get_container_types(self, name=None, start_index=None, add_info=False):
+        """Get a list of container types, filtered by keyword arguments.
+        name: name of the container type or list of names.
+        start_index: Page to retrieve; all if None.
+        """
+        params = self._get_params(name=name, start_index=start_index)
+        return self._get_instances(Containertype, add_info=add_info, params=params)
+
     def get_processes(self, last_modified=None, type=None,
                       inputartifactlimsid=None,
                       techfirstname=None, techlastname=None, projectname=None,

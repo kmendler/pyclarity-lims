@@ -613,15 +613,6 @@ class StepProgramStatus(Entity):
     message = StringDescriptor('message')
 
 
-class StepAvailableProgram():
-    def __init__(self, lims, name, uri):
-        self.lims = lims
-        self.name = name
-        self.uri = uri
-
-    def trigger(self):
-        self.lims.post(self.uri)
-
 class Step(Entity):
     "Step, as defined by the genologics API."
 
@@ -652,22 +643,34 @@ class Step(Entity):
 
     @property
     def available_programs(self):
-        """New in REST API v2 r25"""
         self.get()
         if not self._available_programs:
             self._available_programs = []
             available_programs_et = self.root.find('available-programs')
             if available_programs_et:
                 for ap in available_programs_et.findall('available-program'):
-                    self._available_programs.append(StepAvailableProgram(self.lims, ap.attrib['name'],  ap.attrib['uri']))
+                    self._available_programs.append((ap.attrib['name'], ap.attrib['uri']))
         return self._available_programs
+
+    @property
+    def program_names(self):
+        return [ap[0] for ap in self.available_programs]
+
+    def trigger_program(self, name):
+        progs = [ap[1] for ap in self.available_programs if name == ap[0]]
+        if not progs:
+            raise ValueError('%s not in available program names' % name)
+        e = self.lims.post(progs[0], data=None)
+        self.program_status = StepProgramStatus(self.lims, uri=e.attrib['uri'])
+        self.program_status.root = e
+        return self.program_status
 
     def process(self):
         """Retrieve the Process corresponding to this Step. They share the same id"""
         return Process(self.lims, id=self.id)
 
     @classmethod
-    def create(cls, lims, inputs, container_type_name=None, reagent_category=None, **kwargs):
+    def create(cls, lims, protocol_step, inputs, container_type_name=None, reagent_category=None, **kwargs):
         instance = super(Step, cls)._create(lims, **kwargs)
         if container_type_name:
             container_type_node = ElementTree.SubElement(instance.root, 'container-type')
@@ -675,6 +678,11 @@ class Step(Entity):
         if reagent_category:
             reagent_category_node = ElementTree.SubElement(instance.root, 'reagent_category')
             reagent_category_node.text = reagent_category
+        if not isinstance(protocol_step, ProtocolStep):
+            raise TypeError('protocol_step must be of type ProtocolStep not %s.' % type(protocol_step))
+        configuration_node = ElementTree.SubElement(instance.root, 'configuration')
+        configuration_node.attrib['uri'] = protocol_step.uri
+        configuration_node.text = protocol_step.name
         inputs_node = ElementTree.SubElement(instance.root, 'inputs')
         for artifact in inputs:
             if not isinstance(artifact, Artifact):
