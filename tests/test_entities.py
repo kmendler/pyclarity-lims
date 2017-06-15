@@ -302,7 +302,6 @@ class TestStep(TestEntities):
                 </inputs>
             </stp:step-creation>
             '''
-
             assert elements_equal(ElementTree.fromstring(patch_post.call_args_list[0][1]['data']), ElementTree.fromstring(data))
 
     def test_parse_entity(self):

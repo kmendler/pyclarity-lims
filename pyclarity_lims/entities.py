@@ -11,8 +11,7 @@ from pyclarity_lims.descriptors import StringDescriptor, UdfDictionaryDescriptor
     DimensionDescriptor, IntegerDescriptor, \
     InputOutputMapList, LocationDescriptor, IntegerAttributeDescriptor, \
     StringAttributeDescriptor, EntityListDescriptor, StringListDescriptor, PlacementDictionaryDescriptor, \
-    ReagentLabelList, AttributeListDescriptor, StringDictionaryDescriptor, OutputPlacementListDescriptor, \
-    OutputPlacementList
+    ReagentLabelList, AttributeListDescriptor, StringDictionaryDescriptor, OutputPlacementListDescriptor
 try:
     from urllib.parse import urlsplit, urlparse, parse_qs, urlunparse
 except ImportError:
