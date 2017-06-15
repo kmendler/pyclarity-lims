@@ -11,7 +11,8 @@ from pyclarity_lims.descriptors import StringDescriptor, UdfDictionaryDescriptor
     DimensionDescriptor, IntegerDescriptor, \
     InputOutputMapList, LocationDescriptor, IntegerAttributeDescriptor, \
     StringAttributeDescriptor, EntityListDescriptor, StringListDescriptor, PlacementDictionaryDescriptor, \
-    ReagentLabelList, AttributeListDescriptor, StringDictionaryDescriptor, OutputPlacementListDescriptor
+    ReagentLabelList, AttributeListDescriptor, StringDictionaryDescriptor, OutputPlacementListDescriptor, \
+    OutputPlacementList
 try:
     from urllib.parse import urlsplit, urlparse, parse_qs, urlunparse
 except ImportError:
@@ -262,7 +263,7 @@ class Container(Entity):
     name           = StringDescriptor('name')
     type           = EntityDescriptor('type', Containertype)
     occupied_wells = IntegerDescriptor('occupied-wells')
-    placements     = PlacementDictionaryDescriptor('placement')
+    placements     = PlacementDictionaryDescriptor()
     udf            = UdfDictionaryDescriptor()
     udt            = UdtDictionaryDescriptor()
     state          = StringDescriptor('state')
@@ -669,20 +670,38 @@ class Step(Entity):
         """Retrieve the Process corresponding to this Step. They share the same id"""
         return Process(self.lims, id=self.id)
 
+    def set_placements(self, output_containers, output_placement_list):
+        self.placement = StepPlacements(self.lims, uri=self.uri + '/placements')
+        self.placement.selected_containers = output_containers
+        self.placement.placement_list = output_placement_list
+        self.placement.root = self.placement.post()
+
     @classmethod
     def create(cls, lims, protocol_step, inputs, container_type_name=None, reagent_category=None, **kwargs):
         instance = super(Step, cls)._create(lims, **kwargs)
-        if container_type_name:
-            container_type_node = ElementTree.SubElement(instance.root, 'container-type')
-            container_type_node.text = container_type_name
-        if reagent_category:
-            reagent_category_node = ElementTree.SubElement(instance.root, 'reagent_category')
-            reagent_category_node.text = reagent_category
+        # Check configuratio of the step
         if not isinstance(protocol_step, ProtocolStep):
             raise TypeError('protocol_step must be of type ProtocolStep not %s.' % type(protocol_step))
         configuration_node = ElementTree.SubElement(instance.root, 'configuration')
         configuration_node.attrib['uri'] = protocol_step.uri
         configuration_node.text = protocol_step.name
+
+        # Check container name
+        # Default to the require type if not provided and only possible choice
+        if not container_type_name and len(protocol_step.permittedcontainers) == 1:
+            container_type_name = protocol_step.permittedcontainers[0]
+        if protocol_step.permittedcontainers and container_type_name in protocol_step.permittedcontainers:
+            container_type_node = ElementTree.SubElement(instance.root, 'container-type')
+            container_type_node.text = container_type_name
+        elif protocol_step.permittedcontainers:
+            # TODO: raise early if the container type name is required and missing or not in permitted type
+            pass
+
+        # TODO: more work needed to understand how the permitted reagent applies here
+        if reagent_category:
+            reagent_category_node = ElementTree.SubElement(instance.root, 'reagent_category')
+            reagent_category_node.text = reagent_category
+
         inputs_node = ElementTree.SubElement(instance.root, 'inputs')
         for artifact in inputs:
             if not isinstance(artifact, Artifact):
@@ -702,7 +721,7 @@ class ProtocolStep(Entity):
 
     name                = StringAttributeDescriptor("name")
     type                = EntityDescriptor('type', Processtype)
-    permittedcontainers = StringListDescriptor('container-type', nesting=['container-types'])
+    permittedcontainers = StringListDescriptor('container-type', nesting=['permitted-containers'])
     queue_fields        = AttributeListDescriptor('queue-field', nesting=['queue-fields'])
     step_fields         = AttributeListDescriptor('step-field', nesting=['step-fields'])
     sample_fields       = AttributeListDescriptor('sample-field', nesting=['sample-fields'])

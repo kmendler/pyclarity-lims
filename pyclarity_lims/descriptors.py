@@ -719,8 +719,8 @@ class PlacementDictionaryDescriptor(MutableDescriptor):
     keys and artifact values represented by multiple XML elements.
     """
 
-    def __init__(self, tag, **kwargs):
-        MutableDescriptor.__init__(self, PlacementDictionary, tag=tag, **kwargs)
+    def __init__(self, **kwargs):
+        MutableDescriptor.__init__(self, PlacementDictionary, **kwargs)
 
 
 class EntityListDescriptor(MutableDescriptor):

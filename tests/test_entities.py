@@ -284,7 +284,8 @@ class TestStep(TestEntities):
         protocol_step = NamedMock(
             spec=ProtocolStep,
             real_name='My fancy step',
-            uri='http://testgenologics.com:4040/api/v2/configuration//protocols/p1/steps/p1s1'
+            uri='http://testgenologics.com:4040/api/v2/configuration//protocols/p1/steps/p1s1',
+            permittedcontainers=['Tube']
         )
         with patch('pyclarity_lims.lims.requests.post',
                    return_value=Mock(content=self.step_xml, status_code=201)) as patch_post:
@@ -294,6 +295,7 @@ class TestStep(TestEntities):
                 <configuration uri="http://testgenologics.com:4040/api/v2/configuration//protocols/p1/steps/p1s1">
                     My fancy step
                 </configuration>
+                <container-type>Tube</container-type>
                 <inputs>
                     <input uri="http://testgenologics.com:4040/api/v2/artifacts/a1" />
                     <input uri="http://testgenologics.com:4040/api/v2/artifacts/a2" />
