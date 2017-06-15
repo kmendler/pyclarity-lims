@@ -10,7 +10,7 @@ from tests import NamedMock
 if version_info[0] == 2:
     from mock import patch, Mock
 else:
-    from unittest.mock import patch, Mock, MagicMock
+    from unittest.mock import patch, Mock
 
 url = 'http://testgenologics.com:4040'
 
@@ -278,8 +278,8 @@ class TestStep(TestEntities):
 
     def test_create(self):
         inputs = [
-            MagicMock(spec=Artifact, lims=self.lims, uri='http://testgenologics.com:4040/api/v2/artifacts/a1'),
-            MagicMock(spec=Artifact, lims=self.lims, uri='http://testgenologics.com:4040/api/v2/artifacts/a2')
+            Mock(spec=Artifact, lims=self.lims, uri='http://testgenologics.com:4040/api/v2/artifacts/a1'),
+            Mock(spec=Artifact, lims=self.lims, uri='http://testgenologics.com:4040/api/v2/artifacts/a2')
         ]
         protocol_step = NamedMock(
             spec=ProtocolStep,
