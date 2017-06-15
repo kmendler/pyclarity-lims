@@ -10,7 +10,5 @@ docs/_sources/
 docs/.doctrees/
 docs/_templates/
 docs/*.html
-.fabfilerc
-scripts/*.csv
-scripts/*.log
-scripts/*.out
+
+

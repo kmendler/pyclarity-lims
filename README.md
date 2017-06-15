@@ -1,17 +1,17 @@
-## Python interface to the GenoLogics LIMS server via its REST API.
+## Python interface to the BaseSpace Clarity LIMS server via its REST API.
 
 [![PyPI version](https://badge.fury.io/py/genologics.svg)](http://badge.fury.io/py/genologics)
 
-A basic module for interacting with the GenoLogics LIMS server via
+A basic module for interacting with the BaseSpace LIMS server via
 its REST API. The goal is to provide simple access to the most common
 entities and their attributes in a reasonably Pythonic fashion.
 
 Supported python versions :
 
-2.6
-2.7 (recommended)
+2.7
 3.4
 3.5
+3.6 (recommended)
 
 ### Design
 
@@ -32,14 +32,9 @@ instance to the database.
 ### Installation
 
 ```
-pip install genologics
+pip install pyclarity-lims
 ```
 
-or for the cutting edge version:
-
-```
-pip install https://github.com/SciLifeLab/genologics/tarball/master
-```
 
 ### Usage
 

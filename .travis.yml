@@ -1,11 +1,15 @@
 language: python
 python:
   - "2.7"
-  - "3.3"
   - "3.4"
-  - "3.5"
-install: "pip install -r requirements.txt"
-script: PYTHONPATH=. py.test
+  - "3.6"
+install:
+  - "pip install -r requirements.txt"
+  - "pip install python-coveralls pytest-cov"
+  - "python setup.py install"
+script: PYTHONPATH=. py.test tests/ --doctest-modules  -v --cov pyclarity_lims --cov-report term-missing
+after_success:
+  - coveralls
 notifications:
   email:
     on_success: never 
