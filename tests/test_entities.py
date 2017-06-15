@@ -262,6 +262,7 @@ class TestStepPlacements(TestEntities):
             s.placement_list = new_placements
             assert elements_equal(s.root, ElementTree.fromstring(self.modcont_step_placements_xml))
 
+
 class TestStep(TestEntities):
     step_xml = generic_step.format(url=url, stepid='s1')
 
@@ -272,7 +273,7 @@ class TestStep(TestEntities):
                    return_value=Mock(content=self.step_xml, status_code=201)) as patch_post:
             Step.create(self.lims, inputs=inputs)
             data = '''<?xml version='1.0' encoding='utf-8'?>
-            <stp:step-creation xmlns:stp="http://pyclarity_lims.com/ri/step">
+            <stp:step-creation xmlns:stp="http://genologics.com/ri/step">
                 <inputs>
                     <input uri="http://testgenologics.com:4040/api/v2/artifacts/a1" />
                     <input uri="http://testgenologics.com:4040/api/v2/artifacts/a2" />
@@ -376,7 +377,7 @@ class TestSample(TestEntities):
                 name='s1',
             )
             data = '''<?xml version=\'1.0\' encoding=\'utf-8\'?>
-            <smp:samplecreation xmlns:smp="http://pyclarity_lims.com/ri/sample">
+            <smp:samplecreation xmlns:smp="http://genologics.com/ri/sample">
             <name>s1</name>
             <project uri="project" />
             <location>
