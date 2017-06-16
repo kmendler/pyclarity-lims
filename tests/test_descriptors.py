@@ -5,12 +5,14 @@ from xml.etree import ElementTree
 
 import pytest
 
+from descriptors import ActionList, XmlElementAttributeDict, XmlAttributeList, XmlReagentLabelList
 from pyclarity_lims.constants import nsmap
 from pyclarity_lims.descriptors import StringDescriptor, StringAttributeDescriptor, StringListDescriptor, \
     StringDictionaryDescriptor, IntegerDescriptor, BooleanDescriptor, UdfDictionary, EntityDescriptor, \
     InputOutputMapList, EntityListDescriptor, PlacementDictionary, EntityList, SubTagDictionary, ExternalidList
 from pyclarity_lims.entities import Artifact
 from pyclarity_lims.lims import Lims
+from tests import print_etree, elements_equal
 
 if version_info[0] == 2:
     from mock import Mock
@@ -26,14 +28,6 @@ class TestDescriptor(TestCase):
         outfile = BytesIO()
         ElementTree.ElementTree(e).write(outfile, encoding='utf-8', xml_declaration=True)
         return outfile.getvalue()
-
-
-def print_etree(etree):
-    import sys
-    outfile = BytesIO()
-    ElementTree.ElementTree(etree).write(outfile, encoding='utf-8', xml_declaration=True)
-    sys.stdout.buffer.write(outfile.getvalue())
-
 
 class TestStringDescriptor(TestDescriptor):
     def setUp(self):
@@ -420,6 +414,32 @@ class TestSubTagDictionary(TestCase):
         assert self.dict1['key2'] == 'value2'
 
 
+class TestXmlElementAttributeDict(TestCase):
+    def setUp(self):
+        et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <test-entry xmlns:udf="http://genologics.com/ri/userdefined">
+    <test-tag attrib1="value1" attrib2="value2"/>
+    <test-tag attrib1="value11" attrib2="value12" attrib3="value13"/>
+    </test-entry>""")
+        self.lims = Lims('http://testgenologics.com:4040', username='test', password='password')
+        self.instance1 = Mock(root=et, lims=self.lims)
+        self.dict1 = XmlElementAttributeDict(self.instance1, tag='test-tag', position=0)
+        self.dict2 = XmlElementAttributeDict(self.instance1, tag='test-tag', position=1)
+
+    def test___getitem__(self):
+        assert self.dict1['attrib1'] == 'value1'
+        assert self.dict2['attrib1'] == 'value11'
+
+    def test__len__(self):
+        assert len(self.dict1) == 2
+        assert len(self.dict2) == 3
+
+    def test___setitem__(self):
+        assert self.dict1['attrib1'] == 'value1'
+        assert self.dict1.rootnode(self.dict1.instance).findall('test-tag')[0].attrib['attrib1'] == 'value1'
+        self.dict1['attrib1'] = 'value2'
+        assert self.dict1.rootnode(self.dict1.instance).findall('test-tag')[0].attrib['attrib1'] == 'value2'
+
 class TestEntityList(TestCase):
 
     def setUp(self):
@@ -470,6 +490,7 @@ class TestEntityList(TestCase):
         el.insert(1, a3)
         assert len(el) == 3
         assert el[1] == a3
+        assert el[2] == self.a2
         assert len(el._elems) == 3
         assert len(el.instance.root.findall('artifact')) == 3
 
@@ -483,6 +504,20 @@ class TestEntityList(TestCase):
         assert el[1] == a3
         assert len(el._elems) == 2
         assert el.instance.root.findall('artifact')[1].attrib['uri'] == 'http://testgenologics.com:4040/api/v2/artifacts/a3'
+
+    def test_set_list(self):
+        el = EntityList(self.instance1, 'artifact', Artifact)
+        assert len(el) == 2
+        assert len(el.instance.root.findall('artifact')) == 2
+        a3 = Artifact(self.lims, id='a3')
+        a4 = Artifact(self.lims, id='a4')
+        a5 = Artifact(self.lims, id='a5')
+        el[0:2] = [a3, a4]
+        assert len(el) == 2
+        assert el[0] == a3
+        assert el[1] == a4
+        with pytest.raises(ValueError):
+            el[0:2] = [a3, a4, a5]
 
 
 class TestInputOutputMapList(TestCase):
@@ -538,3 +573,66 @@ class TestExternalidList(TestCase):
         assert elem[2].attrib['uri'] == 'http://testgenologics.com:4040/api/v2/external/3'
 
 
+class TestXmlAttributeList(TestCase):
+
+    def setUp(self):
+        et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <test-entry>
+    <test-tags>
+    <test-tag attrib1="value1" attrib2="value2"/>
+    <test-tag attrib1="value11" attrib2="value12" attrib3="value13"/>
+    </test-tags>
+    </test-entry>
+    """)
+        self.lims = Lims('http://testgenologics.com:4040', username='test', password='password')
+        self.instance1 = Mock(root=et, lims=self.lims)
+
+    def test_get(self):
+        al = XmlAttributeList(self.instance1, tag='test-tag', nesting=['test-tags'])
+        assert al[0] == {'attrib1': 'value1', 'attrib2':'value2'}
+        assert al[1] == {'attrib1': 'value11', 'attrib2':'value12', 'attrib3':'value13'}
+
+    def test_append(self):
+        el = XmlAttributeList(self.instance1, tag='test-tag', nesting=['test-tags'])
+        el.append({'attrib1': 'value21'})
+        elements_equal(
+            el.instance.root.find('test-tags').findall('test-tag')[-1],
+            ElementTree.fromstring('''<test-tag attrib1="value21" />''')
+        )
+
+    def test_insert(self):
+        el = XmlAttributeList(self.instance1, tag='test-tag', nesting=['test-tags'])
+        el.insert(1, {'attrib1': 'value21'})
+        elements_equal(
+            el.instance.root.find('test-tags').findall('test-tag')[1],
+            ElementTree.fromstring('''<test-tag attrib1="value21" />''')
+        )
+        elements_equal(
+            el.instance.root.find('test-tags').findall('test-tag')[2],
+            ElementTree.fromstring('''<test-tag attrib1="value11" attrib2="value12" attrib3="value13" />''')
+        )
+
+
+class TestXmlReagentLabelList(TestCase):
+
+    def setUp(self):
+        et = ElementTree.fromstring('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <test-entry>
+        <reagent-label name="label name"/>
+        </test-entry>''')
+
+        self.lims = Lims('http://testgenologics.com:4040', username='test', password='password')
+        self.instance1 = Mock(root=et, lims=self.lims)
+
+    def test_get(self):
+        ll = XmlReagentLabelList(self.instance1)
+        assert ll == ['label name']
+
+    def test_append(self):
+        rl = XmlReagentLabelList(self.instance1)
+        rl.append('another label')
+        assert rl == ['label name', 'another label']
+        elements_equal(
+            rl.instance.root.findall('reagent-label')[1],
+            ElementTree.fromstring('''<reagent-label name="another label"/>''')
+        )

@@ -5,7 +5,7 @@ from xml.etree import ElementTree
 from pyclarity_lims.entities import ProtocolStep, StepActions, Researcher, Artifact, \
     Step, StepPlacements, Container, Stage, ReagentKit, ReagentLot, Sample, Project
 from pyclarity_lims.lims import Lims
-from tests import NamedMock
+from tests import NamedMock, elements_equal
 
 if version_info[0] == 2:
     from mock import patch, Mock
@@ -170,23 +170,6 @@ class TestEntities(TestCase):
         pass
 
 
-def elements_equal(e1, e2):
-    if e1.tag != e2.tag:
-        print('Tag: %s != %s'%(e1.tag, e2.tag))
-        return False
-    if e1.text and e2.text and e1.text.strip() != e2.text.strip():
-        print('Text: %s != %s' % (e1.text.strip(), e2.text.strip()))
-        return False
-    if e1.tail and e2.tail and e1.tail.strip() != e2.tail.strip():
-        print('Tail: %s != %s' % (e1.tail.strip(), e2.tail.strip()))
-        return False
-    if e1.attrib != e2.attrib:
-        print('Attrib: %s != %s' % (e1.attrib, e2.attrib))
-        return False
-    if len(e1) != len(e2):
-        print('length %s (%s) != length %s (%s) ' % (e1.tag, len(e1), e2.tag, len(e2)))
-        return False
-    return all(elements_equal(c1, c2) for c1, c2 in zip(sorted(e1, key=lambda x: x.tag), sorted(e2, key=lambda x: x.tag)))
 
 
 class TestEntities(TestCase):
@@ -243,7 +226,7 @@ class TestStepPlacements(TestEntities):
             a1 = Artifact(uri='http://testgenologics.com:4040/artifacts/a1', lims=self.lims)
             a2 = Artifact(uri='http://testgenologics.com:4040/artifacts/a2', lims=self.lims)
             c1 = Container(uri='http://testgenologics.com:4040/containers/c1', lims=self.lims)
-            expected_placements = [[a1, (c1, '1:1')], [a2, (c1, '2:1')]]
+            expected_placements = [(a1, (c1, '1:1')), (a2, (c1, '2:1'))]
             assert s.get_placement_list() == expected_placements
 
     def test_set_placements_list(self):
@@ -255,7 +238,7 @@ class TestStepPlacements(TestEntities):
         s = StepPlacements(uri=self.lims.get_uri('steps', 's1', 'placements'), lims=self.lims)
         with patch('requests.Session.get',
                    return_value=Mock(content=self.original_step_placements_xml, status_code=200)):
-            new_placements = [[a1, (c1, '3:1')], [a2, (c1, '4:1')]]
+            new_placements = [(a1, (c1, '3:1')), (a2, (c1, '4:1'))]
             s.placement_list = new_placements
             assert elements_equal(s.root, ElementTree.fromstring(self.modloc_step_placements_xml))
 
@@ -267,7 +250,7 @@ class TestStepPlacements(TestEntities):
         s = StepPlacements(uri=self.lims.get_uri('steps', 's1', 'placements'), lims=self.lims)
         with patch('requests.Session.get',
                    return_value=Mock(content=self.original_step_placements_xml, status_code=200)):
-            new_placements = [[a1, (c2, '1:1')], [a2, (c2, '1:1')]]
+            new_placements = [(a1, (c2, '1:1')), (a2, (c2, '1:1'))]
             s.placement_list = new_placements
             assert elements_equal(s.root, ElementTree.fromstring(self.modcont_step_placements_xml))
 

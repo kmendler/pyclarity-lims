@@ -515,6 +515,7 @@ class StepPlacements(Entity):
 class StepActions(Entity):
     """Actions associated with a step"""
     _escalation = None
+    next_actions = AttributeListDescriptor(tag='next-action', nesting=['next-actions'])
 
     @property
     def escalation(self):
@@ -538,30 +539,6 @@ class StepActions(Entity):
                     art = self.lims.get_batch([Artifact(self.lims, uri=ch.attrib.get('uri')) for ch in node2])
                     self._escalation['artifacts'].extend(art)
         return self._escalation
-
-    def get_next_actions(self):
-        actions = []
-        self.get()
-        if self.root.find('next-actions') is not None:
-            for node in self.root.find('next-actions').findall('next-action'):
-                action = {
-                    'artifact': Artifact(self.lims, node.attrib.get('artifact-uri')),
-                    'action': node.attrib.get('action'),
-                }
-                if node.attrib.get('step-uri'):
-                    action['step'] = Step(self.lims, uri=node.attrib.get('step-uri'))
-                if node.attrib.get('rework-step-uri'):
-                    action['rework-step'] = Step(self.lims, uri=node.attrib.get('rework-step-uri'))
-                actions.append(action)
-        return actions
-
-    def set_next_actions(self, actions):
-        for node in self.root.find('next-actions').findall('next-action'):
-            art_uri = node.attrib.get('artifact-uri')
-            action = [action for action in actions if action['artifact'].uri == art_uri][0]
-            if 'action' in action: node.attrib['action'] = action.get('action')
-
-    next_actions = property(get_next_actions, set_next_actions)
 
 
 class ReagentKit(Entity):
