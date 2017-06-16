@@ -5,7 +5,7 @@ from xml.etree import ElementTree
 
 import pytest
 
-from descriptors import ActionList, XmlElementAttributeDict, XmlAttributeList, XmlReagentLabelList
+from descriptors import XmlElementAttributeDict, XmlAttributeList, XmlReagentLabelList
 from pyclarity_lims.constants import nsmap
 from pyclarity_lims.descriptors import StringDescriptor, StringAttributeDescriptor, StringListDescriptor, \
     StringDictionaryDescriptor, IntegerDescriptor, BooleanDescriptor, UdfDictionary, EntityDescriptor, \
@@ -439,6 +439,7 @@ class TestXmlElementAttributeDict(TestCase):
         assert self.dict1.rootnode(self.dict1.instance).findall('test-tag')[0].attrib['attrib1'] == 'value1'
         self.dict1['attrib1'] = 'value2'
         assert self.dict1.rootnode(self.dict1.instance).findall('test-tag')[0].attrib['attrib1'] == 'value2'
+
 
 class TestEntityList(TestCase):
 

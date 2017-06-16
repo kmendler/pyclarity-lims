@@ -5,6 +5,7 @@ Entities and their descriptors for the LIMS interface.
 Per Kraulis, Science for Life Laboratory, Stockholm, Sweden.
 Copyright (C) 2012 Per Kraulis
 """
+from descriptors import XmlActionList, MutableDescriptor
 from pyclarity_lims.constants import nsmap
 from pyclarity_lims.descriptors import StringDescriptor, UdfDictionaryDescriptor, \
     UdtDictionaryDescriptor, ExternalidListDescriptor, EntityDescriptor, BooleanDescriptor, \
@@ -515,7 +516,7 @@ class StepPlacements(Entity):
 class StepActions(Entity):
     """Actions associated with a step"""
     _escalation = None
-    next_actions = AttributeListDescriptor(tag='next-action', nesting=['next-actions'])
+    next_actions = MutableDescriptor(XmlActionList)
 
     @property
     def escalation(self):

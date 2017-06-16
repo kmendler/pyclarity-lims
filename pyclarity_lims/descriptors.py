@@ -240,20 +240,54 @@ class XmlElementAttributeDict(XmlDictionary, Nestable):
         Nestable.__init__(self, nesting=kwargs.pop('nesting', []))
         XmlDictionary.__init__(self, instance, *args, **kwargs)
 
-
     def _update_elems(self):
         # only one element here
-
         # find all the tags
         all_tags = self.rootnode(self.instance).findall(self.tag)
         # only take the one at specified position
-        self._elems = [all_tags[self.position]]
+        if len(all_tags) >  self.position:
+            self._elems = [all_tags[self.position]]
+        else:
+            self._elems = []
 
     def _parse_element(self, element, **kwargs):
         for k, v in element.attrib.items():
             dict.__setitem__(self, k, v)
 
     def _setitem(self, key, value):
+        self._elems[0].attrib[key] = value
+
+    def _delitem(self, key):
+        del self._elems[0].attrib[key]
+
+
+class XmlAction(XmlElementAttributeDict):
+    def __init__(self, instance, tag, nesting,  *args, **kwargs):
+        XmlElementAttributeDict.__init__(
+            self, instance, tag=tag,
+            position=kwargs.pop('position', 0),
+            nesting=nesting,
+            *args, **kwargs
+        )
+
+    def _parse_element(self, element, **kwargs):
+        from pyclarity_lims.entities import Artifact, Step
+        for k, v in element.attrib.items():
+            if k == 'artifact-uri':
+                k = 'artifact'
+                v = Artifact(self.instance.lims, uri=v)
+            elif k == 'step-uri':
+                k = 'step'
+                v = Step(self.instance.lims, uri=v)
+            elif k == 'rework-step-uri':
+                k = 'rework-step'
+                v = Step(self.instance.lims, uri=v)
+            dict.__setitem__(self, k, v)
+
+    def _setitem(self, key, value):
+        if key in ['artifact', 'step', 'rework-step']:
+            key = key + '-uri'
+            value = value.uri
         self._elems[0].attrib[key] = value
 
     def _delitem(self, key):
@@ -470,8 +504,34 @@ class XmlAttributeList(TagXmlList):
 
     def _modify_value_before_insert(self, value, position):
         """function called for each value being inserted in the list.
-        Give subclass an opportunity to alter the data efore insert"""
+        Give subclass an opportunity to alter the data before insert"""
         return XmlElementAttributeDict(self.instance, tag=self.tag, nesting=self.rootkeys, position=position)
+
+
+class XmlActionList(TagXmlList):
+
+    def __init__(self, instance, *args, **kwargs):
+        TagXmlList.__init__(self, instance, tag='next-action', nesting=['next-actions'], *args, **kwargs)
+
+    def _create_new_node(self, value):
+        if not isinstance(value, dict):
+            raise TypeError('You need to provide a dict not ' + type(value))
+        node = ElementTree.Element(self.tag)
+        for k, v in value.items():
+            if k in ['artifact', 'step', 'rework-step']:
+                k = k + '-uri'
+                v = v.uri
+            node.attrib[k] = v
+        return node
+
+    def _parse_element(self, element, lims, position, **kwargs):
+        d = XmlAction(self.instance, tag=self.tag, nesting=self.rootkeys, position=position)
+        list.append(self, d)
+
+    def _modify_value_before_insert(self, value, position):
+        """function called for each value being inserted in the list.
+        Give subclass an opportunity to alter the data before insert"""
+        return XmlAction(self.instance, tag=self.tag, nesting=self.rootkeys, position=position)
 
 
 class XmlReagentLabelList(XmlAttributeList):
@@ -781,7 +841,7 @@ class UdtDictionaryDescriptor(MutableDescriptor):
     """
 
     def __init__(self, **kwargs):
-        MutableDescriptor.__init__(self, UdfDictionary, udt=False, **kwargs)
+        MutableDescriptor.__init__(self, UdfDictionary, udt=True, **kwargs)
 
 
 class PlacementDictionaryDescriptor(MutableDescriptor):

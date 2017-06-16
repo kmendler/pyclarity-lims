@@ -209,6 +209,8 @@ class TestStepActions(TestEntities):
             step1 = Step(self.lims, uri='http://testgenologics.com:4040/steps/s1')
             step2 = Step(self.lims, uri='http://testgenologics.com:4040/steps/s2')
             artifact = Artifact(self.lims, uri='http://testgenologics.com:4040/artifacts/a1')
+
+
             expected_next_actions = [{'artifact': artifact, 'action': 'requeue',
                                       'step': step1, 'rework-step': step2}]
             assert s.next_actions == expected_next_actions
