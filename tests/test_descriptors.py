@@ -12,7 +12,7 @@ from pyclarity_lims.descriptors import StringDescriptor, StringAttributeDescript
     XmlElementAttributeDict, XmlAttributeList, XmlReagentLabelList
 from pyclarity_lims.entities import Artifact
 from pyclarity_lims.lims import Lims
-from tests import print_etree, elements_equal
+from tests import  elements_equal
 
 if version_info[0] == 2:
     from mock import Mock
@@ -517,8 +517,6 @@ class TestEntityList(TestCase):
         assert len(el) == 2
         assert el[0] == a3
         assert el[1] == a4
-        with pytest.raises(ValueError):
-            el[0:2] = [a3, a4, a5]
 
 
 class TestInputOutputMapList(TestCase):
