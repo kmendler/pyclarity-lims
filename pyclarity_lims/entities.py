@@ -5,14 +5,14 @@ Entities and their descriptors for the LIMS interface.
 Per Kraulis, Science for Life Laboratory, Stockholm, Sweden.
 Copyright (C) 2012 Per Kraulis
 """
-from descriptors import XmlActionList, MutableDescriptor
 from pyclarity_lims.constants import nsmap
 from pyclarity_lims.descriptors import StringDescriptor, UdfDictionaryDescriptor, \
     UdtDictionaryDescriptor, ExternalidListDescriptor, EntityDescriptor, BooleanDescriptor, \
     DimensionDescriptor, IntegerDescriptor, \
     InputOutputMapList, LocationDescriptor, IntegerAttributeDescriptor, \
     StringAttributeDescriptor, EntityListDescriptor, StringListDescriptor, PlacementDictionaryDescriptor, \
-    ReagentLabelList, AttributeListDescriptor, StringDictionaryDescriptor, OutputPlacementListDescriptor
+    ReagentLabelList, AttributeListDescriptor, StringDictionaryDescriptor, OutputPlacementListDescriptor, \
+    XmlActionList, MutableDescriptor
 try:
     from urllib.parse import urlsplit, urlparse, parse_qs, urlunparse
 except ImportError:

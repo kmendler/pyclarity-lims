@@ -5,11 +5,11 @@ from xml.etree import ElementTree
 
 import pytest
 
-from descriptors import XmlElementAttributeDict, XmlAttributeList, XmlReagentLabelList
 from pyclarity_lims.constants import nsmap
 from pyclarity_lims.descriptors import StringDescriptor, StringAttributeDescriptor, StringListDescriptor, \
     StringDictionaryDescriptor, IntegerDescriptor, BooleanDescriptor, UdfDictionary, EntityDescriptor, \
-    InputOutputMapList, EntityListDescriptor, PlacementDictionary, EntityList, SubTagDictionary, ExternalidList
+    InputOutputMapList, EntityListDescriptor, PlacementDictionary, EntityList, SubTagDictionary, ExternalidList,\
+    XmlElementAttributeDict, XmlAttributeList, XmlReagentLabelList
 from pyclarity_lims.entities import Artifact
 from pyclarity_lims.lims import Lims
 from tests import print_etree, elements_equal
