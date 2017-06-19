@@ -57,7 +57,7 @@ class TestLims(TestCase):
         self.assertRaises(HTTPError, lims.parse_response, r)
 
 
-    @patch('requests.Session.get',return_value=Mock(content = sample_xml, status_code=200))
+    @patch('requests.Session.request',return_value=Mock(content = sample_xml, status_code=200))
     def test_get(self, mocked_instance):
         lims = Lims(self.url, username=self.username, password=self.password)
         r = lims.get('{url}/api/v2/artifacts?sample_name=test_sample'.format(url=self.url))
@@ -65,26 +65,28 @@ class TestLims(TestCase):
         assert callable(r.find)
         assert hasattr(r.attrib, '__getitem__')
         assert mocked_instance.call_count == 1
-        mocked_instance.assert_called_with('http://testgenologics.com:4040/api/v2/artifacts?sample_name=test_sample', timeout=16,
-                                  headers={'accept': 'application/xml'}, params={}, auth=('test', 'password'))
+        mocked_instance.assert_called_with(
+            'GET', 'http://testgenologics.com:4040/api/v2/artifacts?sample_name=test_sample',
+            headers={'accept': 'application/xml'}, params={}
+        )
 
     def test_put(self):
         lims = Lims(self.url, username=self.username, password=self.password)
         uri = '{url}/api/v2/samples/test_sample'.format(url=self.url)
-        with patch('requests.put', return_value=Mock(content = self.sample_xml, status_code=200)) as mocked_put:
+        with patch('requests.Session.request', return_value=Mock(content = self.sample_xml, status_code=200)) as mocked_put:
             response = lims.put(uri=uri, data=self.sample_xml)
             assert mocked_put.call_count == 1
-        with patch('requests.put', return_value=Mock(content = self.error_xml, status_code=400)) as mocked_put:
+        with patch('requests.Session.request', return_value=Mock(content = self.error_xml, status_code=400)) as mocked_put:
             self.assertRaises(HTTPError, lims.put, uri=uri, data=self.sample_xml)
             assert mocked_put.call_count == 1
 
     def test_post(self):
         lims = Lims(self.url, username=self.username, password=self.password)
         uri = '{url}/api/v2/samples'.format(url=self.url)
-        with patch('requests.post', return_value=Mock(content = self.sample_xml, status_code=200)) as mocked_put:
+        with patch('requests.Session.request', return_value=Mock(content = self.sample_xml, status_code=200)) as mocked_put:
             response = lims.post(uri=uri, data=self.sample_xml)
             assert mocked_put.call_count == 1
-        with patch('requests.post', return_value=Mock(content = self.error_xml, status_code=400)) as mocked_put:
+        with patch('requests.Session.request', return_value=Mock(content = self.error_xml, status_code=400)) as mocked_put:
             self.assertRaises(HTTPError, lims.post, uri=uri, data=self.sample_xml)
             assert mocked_put.call_count == 1
 
@@ -102,7 +104,7 @@ class TestLims(TestCase):
         file_end = """</file:file>"""
         glsstorage_xml = '\n'.join([xml_intro,file_start, attached, upload, content_loc, file_end]).format(url=self.url)
         file_post_xml = '\n'.join([xml_intro, file_start2, attached, upload, content_loc, file_end]).format(url=self.url)
-        with patch('requests.post', side_effect=[Mock(content=glsstorage_xml, status_code=200),
+        with patch('requests.Session.request', side_effect=[Mock(content=glsstorage_xml, status_code=200),
                                                  Mock(content=file_post_xml, status_code=200),
                                                  Mock(content="", status_code=200)]):
 
@@ -110,14 +112,14 @@ class TestLims(TestCase):
                                         'filename_to_upload')
             assert file.id == "40-3501"
 
-        with patch('requests.post', side_effect=[Mock(content=self.error_xml, status_code=400)]):
+        with patch('requests.Session.request', side_effect=[Mock(content=self.error_xml, status_code=400)]):
 
           self.assertRaises(HTTPError,
                             lims.upload_new_file,
                             Mock(uri=self.url+"/api/v2/samples/test_sample"),
                             'filename_to_upload')
 
-    @patch('requests.post', return_value=Mock(content = sample_xml, status_code=200))
+    @patch('requests.Session.request', return_value=Mock(content = sample_xml, status_code=200))
     def test_route_artifact(self, mocked_post):
         lims = Lims(self.url, username=self.username, password=self.password)
         artifact = Mock(uri=self.url+"/artifact/2")

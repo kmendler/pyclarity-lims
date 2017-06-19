@@ -332,7 +332,7 @@ class SubTagDictionary(XmlDictionary):
 
     def _update_elems(self):
         tag_node = self.rootnode(self.instance).find(self.tag)
-        if tag_node:
+        if tag_node is not None:
             self._elems = tag_node.getchildren()
         else:
             self._elems = []
@@ -631,7 +631,7 @@ class OutputPlacementList(TagXmlList):
         input = Artifact(lims, uri=element.attrib['uri'])
         loc = element.find('location')
         location = (None, None)
-        if loc:
+        if loc is not None:
             location = (
                 Container(lims, uri=loc.find('container').attrib['uri']),
                 loc.find('value').text

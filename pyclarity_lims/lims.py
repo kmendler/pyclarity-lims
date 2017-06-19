@@ -14,6 +14,7 @@ import os
 import re
 from io import BytesIO
 import requests
+import time
 
 # python 2.7, 3+ compatibility
 from sys import version_info
@@ -41,7 +42,7 @@ if version_info[:2] < (2,7):
         p26_write(self, file, encoding=encoding)
     ElementTree.ElementTree.write = write_with_xml_declaration
 
-TIMEOUT = 16
+TIMEOUT = 60
 
 
 class Lims(object):
@@ -49,7 +50,7 @@ class Lims(object):
 
     VERSION = 'v2'
 
-    def __init__(self, baseuri, username, password, version=VERSION):
+    def __init__(self, baseuri, username, password, version=VERSION, timeout=TIMEOUT):
         """baseuri: Base URI for the GenoLogics server, excluding
                     the 'api' or version parts!
                     For example: https://genologics.scilifelab.se:8443/
@@ -64,9 +65,24 @@ class Lims(object):
         self.cache = dict()
         # For optimization purposes, enables requests to persist connections
         self.request_session = requests.Session()
+        self.request_session.auth = (username, password)
+        self.request_session.timeout = timeout
+
         # The connection pool has a default size of 10
         self.adapter = requests.adapters.HTTPAdapter(pool_connections=100, pool_maxsize=100)
+
         self.request_session.mount('http://', self.adapter)
+
+
+    def _req(self, method, url, **kwargs):
+
+        start = time.time()
+        r = self.request_session.request(method, url, **kwargs)
+        end = time.time()
+
+        logging.debug('%s request took % seconds' % (r.request.method, end - start))
+        return r
+
 
     def get_uri(self, *segments, **query):
         "Return the full URI given the path segments and optional query."
@@ -79,15 +95,114 @@ class Lims(object):
     def get(self, uri, params=dict()):
         "GET data from the URI. Return the response XML as an ElementTree."
         try:
-            r = self.request_session.get(uri, params=params,
-                                         auth=(self.username, self.password),
-                                         headers=dict(accept='application/xml'),
-                                         timeout=TIMEOUT)
+            r = self._req('GET', uri, params=params, headers=dict(accept='application/xml'))
         except requests.exceptions.ConnectionError as e:
             raise type(e)("{0}, Error trying to reach {1}".format(e.message, uri))
 
         else:
             return self.parse_response(r)
+
+    def put(self, uri, data, params=dict()):
+        """PUT the serialized XML to the given URI.
+        Return the response XML as an ElementTree.
+        """
+        r = self._req('PUT', uri, data=data, params=params,
+                         headers={'content-type': 'application/xml',
+                                  'accept': 'application/xml'})
+        return self.parse_response(r)
+
+    def post(self, uri, data, params=dict()):
+        """POST the serialized XML to the given URI.
+        Return the response XML as an ElementTree.
+        """
+        r = self._req('POST', uri, data=data, params=params,
+                      headers={'content-type': 'application/xml', 'accept': 'application/xml'})
+        return self.parse_response(r, accept_status_codes=[200, 201, 202])
+
+    def validate_response(self, response, accept_status_codes=[200]):
+        """Parse the XML returned in the response.
+        Raise an HTTP error if the response status is not one of the
+        specified accepted status codes.
+        """
+        if response.status_code not in accept_status_codes:
+            try:
+                root = ElementTree.fromstring(response.content)
+                node = root.find('message')
+                if node is None:
+                    response.raise_for_status()
+                    message = "%s" % (response.status_code)
+                else:
+                    message = "%s: %s" % (response.status_code, node.text)
+                node = root.find('suggested-actions')
+                if node is not None:
+                    message += ' ' + node.text
+            except ElementTree.ParseError:  # some error messages might not follow the xml standard
+                message = response.content
+            raise requests.exceptions.HTTPError(message)
+        return True
+
+    def parse_response(self, response, accept_status_codes=[200]):
+        """Parse the XML returned in the response.
+        Raise an HTTP error if the response status is not 200.
+        """
+        self.validate_response(response, accept_status_codes)
+        root = ElementTree.fromstring(response.content)
+        return root
+
+    def check_version(self):
+        """Raise ValueError if the version for this interface
+        does not match any of the versions given for the API.
+        """
+        uri = urljoin(self.baseuri, 'api')
+        root = self.get(uri)
+        tag = nsmap('ver:versions')
+        assert tag == root.tag
+        for node in root.findall('version'):
+            if node.attrib['major'] == self.VERSION: return
+        raise ValueError('version mismatch')
+
+    def _get_params(self, **kwargs):
+        "Convert keyword arguments to a kwargs dictionary."
+        result = dict()
+        for key, value in kwargs.items():
+            if value is None: continue
+            result[key.replace('_', '-')] = value
+        return result
+
+    def _get_params_udf(self, udf=dict(), udtname=None, udt=dict()):
+        "Convert UDF-ish arguments to a params dictionary."
+        result = dict()
+        for key, value in udf.items():
+            result["udf.%s" % key] = value
+        if udtname is not None:
+            result['udt.name'] = udtname
+        for key, value in udt.items():
+            result["udt.%s" % key] = value
+        return result
+
+    def _get_instances(self, klass, add_info=None, params=dict()):
+        results = []
+        additionnal_info_dicts = []
+        tag = klass._TAG
+        if tag is None:
+            tag = klass.__name__.lower()
+        root = self.get(self.get_uri(klass._URI), params=params)
+        while params.get('start-index') is None:  # Loop over all pages.
+            for node in root.findall(tag):
+                results.append(klass(self, uri=node.attrib['uri']))
+                info_dict = {}
+                for attrib_key in node.attrib:
+                    info_dict[attrib_key] = node.attrib[attrib_key]
+                for subnode in node:
+                    info_dict[subnode.tag] = subnode.text
+                additionnal_info_dicts.append(info_dict)
+            node = root.find('next-page')
+            if node is None: break
+            root = self.get(node.attrib['uri'], params=params)
+        if add_info:
+            return results, additionnal_info_dicts
+        else:
+            return results
 
     def get_file_contents(self, id=None, uri=None):
         """Returns the contents of the file of <ID> or <uri>"""
@@ -98,7 +213,7 @@ class Lims(object):
         else:
             raise ValueError("id or uri required")
         url = urljoin(self.baseuri, '/'.join(segments))
-        r = self.request_session.get(url, auth=(self.username, self.password), timeout=TIMEOUT)
+        r = self._req('GET', url)
         self.validate_response(r)
         return r.text
 
@@ -133,69 +248,6 @@ class Lims(object):
                           auth=(self.username, self.password))
         self.validate_response(r)
         return file
-
-    def put(self, uri, data, params=dict()):
-        """PUT the serialized XML to the given URI.
-        Return the response XML as an ElementTree.
-        """
-        r = requests.put(uri, data=data, params=params,
-                         auth=(self.username, self.password),
-                         headers={'content-type': 'application/xml',
-                                  'accept': 'application/xml'})
-        return self.parse_response(r)
-
-    def post(self, uri, data, params=dict()):
-        """POST the serialized XML to the given URI.
-        Return the response XML as an ElementTree.
-        """
-        r = requests.post(uri, data=data, params=params,
-                          auth=(self.username, self.password),
-                          headers={'content-type': 'application/xml',
-                                   'accept': 'application/xml'})
-        return self.parse_response(r, accept_status_codes=[200, 201, 202])
-
-    def check_version(self):
-        """Raise ValueError if the version for this interface
-        does not match any of the versions given for the API.
-        """
-        uri = urljoin(self.baseuri, 'api')
-        r = requests.get(uri, auth=(self.username, self.password))
-        root = self.parse_response(r)
-        tag = nsmap('ver:versions')
-        assert tag == root.tag
-        for node in root.findall('version'):
-            if node.attrib['major'] == self.VERSION: return
-        raise ValueError('version mismatch')
-
-    def validate_response(self, response, accept_status_codes=[200]):
-        """Parse the XML returned in the response.
-        Raise an HTTP error if the response status is not one of the
-        specified accepted status codes.
-        """
-        if response.status_code not in accept_status_codes:
-            try:
-                root = ElementTree.fromstring(response.content)
-                node = root.find('message')
-                if node is None:
-                    response.raise_for_status()
-                    message = "%s" % (response.status_code)
-                else:
-                    message = "%s: %s" % (response.status_code, node.text)
-                node = root.find('suggested-actions')
-                if node is not None:
-                    message += ' ' + node.text
-            except ElementTree.ParseError:  # some error messages might not follow the xml standard
-                message = response.content
-            raise requests.exceptions.HTTPError(message)
-        return True
-
-    def parse_response(self, response, accept_status_codes=[200]):
-        """Parse the XML returned in the response.
-        Raise an HTTP error if the response status is not 200.
-        """
-        self.validate_response(response, accept_status_codes)
-        root = ElementTree.fromstring(response.content)
-        return root
 
     def get_udfs(self, name=None, attach_to_name=None, attach_to_category=None, start_index=None, add_info=False):
         """Get a list of udfs, filtered by keyword arguments.
@@ -460,49 +512,6 @@ class Lims(object):
                                   start_index=start_index)
         return self._get_instances(ReagentLot, params=params)
 
-    def _get_params(self, **kwargs):
-        "Convert keyword arguments to a kwargs dictionary."
-        result = dict()
-        for key, value in kwargs.items():
-            if value is None: continue
-            result[key.replace('_', '-')] = value
-        return result
-
-    def _get_params_udf(self, udf=dict(), udtname=None, udt=dict()):
-        "Convert UDF-ish arguments to a params dictionary."
-        result = dict()
-        for key, value in udf.items():
-            result["udf.%s" % key] = value
-        if udtname is not None:
-            result['udt.name'] = udtname
-        for key, value in udt.items():
-            result["udt.%s" % key] = value
-        return result
-
-    def _get_instances(self, klass, add_info=None, params=dict()):
-        results = []
-        additionnal_info_dicts = []
-        tag = klass._TAG
-        if tag is None:
-            tag = klass.__name__.lower()
-        root = self.get(self.get_uri(klass._URI), params=params)
-        while params.get('start-index') is None:  # Loop over all pages.
-            for node in root.findall(tag):
-                results.append(klass(self, uri=node.attrib['uri']))
-                info_dict = {}
-                for attrib_key in node.attrib:
-                    info_dict[attrib_key] = node.attrib[attrib_key]
-                for subnode in node:
-                    info_dict[subnode.tag] = subnode.text
-                additionnal_info_dicts.append(info_dict)
-            node = root.find('next-page')
-            if node is None: break
-            root = self.get(node.attrib['uri'], params=params)
-        if add_info:
-            return results, additionnal_info_dicts
-        else:
-            return results
-
     def get_batch(self, instances, force=False):
         """Get the content of a set of instances using the efficient batch call.
 
@@ -577,10 +586,9 @@ class Lims(object):
             a.set('uri', artifact.uri)
 
         uri = self.get_uri('route', 'artifacts')
-        r = requests.post(uri, data=self.tostring(ElementTree.ElementTree(root)),
-                          auth=(self.username, self.password),
-                          headers={'content-type': 'application/xml',
-                                   'accept': 'application/xml'})
+        r = self._req('POST', uri, data=self.tostring(ElementTree.ElementTree(root)),
+                      headers={'content-type': 'application/xml',
+                               'accept': 'application/xml'})
         self.validate_response(r)
 
     def tostring(self, etree):

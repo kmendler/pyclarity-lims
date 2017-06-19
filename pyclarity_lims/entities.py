@@ -625,7 +625,7 @@ class Step(Entity):
         if not self._available_programs:
             self._available_programs = []
             available_programs_et = self.root.find('available-programs')
-            if available_programs_et:
+            if available_programs_et is not None:
                 for ap in available_programs_et.findall('available-program'):
                     self._available_programs.append((ap.attrib['name'], ap.attrib['uri']))
         return self._available_programs
