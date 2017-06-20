@@ -1,17 +1,14 @@
-.. Genologics documentation master file, created by
-   sphinx-quickstart on Tue Oct  1 11:51:30 2013.
+.. pyclarity-lims documentation master file, created by
+   sphinx-quickstart on Tue Jun 20 11:45:52 2017.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Genologics's documentation!
-======================================
-
-Contents:
+Welcome to pyclarity-lims's documentation!
+==========================================
 
 .. toctree::
    :maxdepth: 2
-
-   scripts
+   :caption: Contents:
 
 
 
@@ -21,4 +18,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
