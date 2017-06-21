@@ -1,11 +1,3 @@
-"""Python interface to GenoLogics LIMS via its REST API.
-
-LIMS interface.
-
-Per Kraulis, Science for Life Laboratory, Stockholm, Sweden.
-Copyright (C) 2012 Per Kraulis
-"""
-
 __all__ = ['Lab', 'Researcher', 'Project', 'Sample',
            'Containertype', 'Container', 'Processtype', 'Process',
            'Artifact', 'Lims']
@@ -45,18 +37,24 @@ TIMEOUT = 16
 
 
 class Lims(object):
-    "LIMS interface through which all entity instances are retrieved."
+    """
+    LIMS interface through which all searches can be performed and :py:class:`Entity <pyclarity_lims.entities.Entity>` instances are retrieved.
+
+    :param baseuri: Base URI for the GenoLogics server, excluding the 'api' or version parts!
+    :param username: The account name of the user to login as.
+    :param password: The password for the user account to login as.
+    :param version: The optional LIMS API version, by default 'v2'
+
+    Example: ::
+
+        Lims('https://claritylims.example.com', 'username' , 'Pa55w0rd')
+
+    """
 
     VERSION = 'v2'
 
     def __init__(self, baseuri, username, password, version=VERSION):
-        """baseuri: Base URI for the GenoLogics server, excluding
-                    the 'api' or version parts!
-                    For example: https://genologics.scilifelab.se:8443/
-        username: The account name of the user to login as.
-        password: The password for the user account to login as.
-        version: The optional LIMS API version, by default 'v2'
-        """
+
         self.baseuri = baseuri.rstrip('/') + '/'
         self.username = username
         self.password = password
@@ -69,7 +67,9 @@ class Lims(object):
         self.request_session.mount('http://', self.adapter)
 
     def get_uri(self, *segments, **query):
-        "Return the full URI given the path segments and optional query."
+        """
+        Return the full URI given the path segments and optional query.
+        """
         segments = ['api', self.VERSION] + list(segments)
         url = urljoin(self.baseuri, '/'.join(segments))
         if query:
@@ -518,6 +518,8 @@ class Lims(object):
         The batch request API call collapses all requested Artifacts with different
         state into a single result with state equal to the state of the Artifact
         occurring at the last position in the list.
+
+        :param instances: List of instances children of Entity
         """
         if not instances:
             return []
