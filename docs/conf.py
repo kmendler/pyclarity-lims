@@ -90,18 +90,24 @@ todo_include_todos = False
 # a list of builtin themes.
 #
 html_theme = 'alabaster'
-#html_theme = 'default'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {
+    'fixed_sidebar': True,
+    'github_user': 'EdinburghGenomics',
+    'github_repo': 'pyclarity-lims',
+    'github_button': True,
+    'travis_button': True,
+    'codecov_button': True
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-# html_static_path = ['_static']
+html_static_path = ['_static']
 
 
 # -- Options for HTMLHelp output ------------------------------------------
@@ -162,6 +168,4 @@ texinfo_documents = [
 
 
 # -- Options for side bar ----------------------------------------------------
-html_sidebars = { '**': ['globaltoc.html', 'searchbox.html'], }
-
-
+html_sidebars = { '**': ['about.html', 'navigation.html', 'relations.html', 'searchbox.html'], }
