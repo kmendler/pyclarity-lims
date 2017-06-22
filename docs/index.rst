@@ -10,6 +10,17 @@ Pyclarity-lims is a fork of `genologics <https://github.com/SciLifeLab/genologic
 Most of the initial logic still applies and genologics module still exist in pyclarity-lims for backward compatibility.
 However there are a few backward incompatible changes that had to be made.
 
+.. image:: https://img.shields.io/pypi/v/pyclarity-lims.svg
+    :target: https://pypi.python.org/pypi/pyclarity-lims
+.. image:: https://img.shields.io/pypi/pyversions/pyclarity-lims.svg
+    :target: https://pypi.python.org/pypi/pyclarity-lims
+.. image:: https://img.shields.io/travis/EdinburghGenomics/pyclarity-lims/master.svg
+    :target: https://travis-ci.org/EdinburghGenomics/pyclarity-lims
+.. image:: https://img.shields.io/github/issues/EdinburghGenomics/pyclarity-lims.svg
+    :target: https://github.com/EdinburghGenomics/pyclarity-lims/issues
+.. image:: https://coveralls.io/repos/github/EdinburghGenomics/pyclarity-lims/badge.svg
+    :target: https://coveralls.io/github/EdinburghGenomics/pyclarity-lims
+
 .. toctree::
    :maxdepth: 2
    :caption: Table of Contents:
