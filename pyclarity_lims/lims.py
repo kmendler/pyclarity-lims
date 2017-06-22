@@ -1,11 +1,3 @@
-"""Python interface to GenoLogics LIMS via its REST API.
-
-LIMS interface.
-
-Per Kraulis, Science for Life Laboratory, Stockholm, Sweden.
-Copyright (C) 2012 Per Kraulis
-"""
-
 __all__ = ['Lab', 'Researcher', 'Project', 'Sample',
            'Containertype', 'Container', 'Processtype', 'Process',
            'Artifact', 'Lims']
@@ -46,18 +38,25 @@ TIMEOUT = 60
 
 
 class Lims(object):
-    "LIMS interface through which all entity instances are retrieved."
+    """
+    LIMS interface through which all searches can be performed and :py:class:`Entity <pyclarity_lims.entities.Entity>` instances are retrieved.
+
+    :param baseuri: Base URI for the GenoLogics server, excluding the 'api' or version parts!
+    :param username: The account name of the user to login as.
+    :param password: The password for the user account to login as.
+    :param version: The optional LIMS API version, by default 'v2'
+    :param timeout: The timeout after which a query to the lims is aborted, by default 60
+
+    Example: ::
+
+        Lims('https://claritylims.example.com', 'username' , 'Pa55w0rd')
+
+    """
 
     VERSION = 'v2'
 
-    def __init__(self, baseuri, username, password, version=VERSION, timeout=TIMEOUT):
-        """baseuri: Base URI for the GenoLogics server, excluding
-                    the 'api' or version parts!
-                    For example: https://genologics.scilifelab.se:8443/
-        username: The account name of the user to login as.
-        password: The password for the user account to login as.
-        version: The optional LIMS API version, by default 'v2'
-        """
+    def __init__(self, baseuri, username, password, version=VERSION):
+
         self.baseuri = baseuri.rstrip('/') + '/'
         self.username = username
         self.password = password
@@ -85,7 +84,13 @@ class Lims(object):
 
 
     def get_uri(self, *segments, **query):
-        "Return the full URI given the path segments and optional query."
+        """
+        Return the full URI given the path segments and optional query.
+
+        :param segments: arguments creating the uri
+        :param query: kwargs creating the query
+
+        """
         segments = ['api', self.VERSION] + list(segments)
         url = urljoin(self.baseuri, '/'.join(segments))
         if query:
@@ -93,7 +98,15 @@ class Lims(object):
         return url
 
     def get(self, uri, params=dict()):
-        "GET data from the URI. Return the response XML as an ElementTree."
+        """
+        GET data from the URI. It checks the status and return the text of response as an ElementTree.
+
+        :param uri: the uri to query
+        :param params: dict containing the query parameters
+
+        :return the text of response as an ElementTree
+
+        """
         try:
             r = self._req('GET', uri, params=params, headers=dict(accept='application/xml'))
         except requests.exceptions.ConnectionError as e:
@@ -251,12 +264,16 @@ class Lims(object):
 
     def get_udfs(self, name=None, attach_to_name=None, attach_to_category=None, start_index=None, add_info=False):
         """Get a list of udfs, filtered by keyword arguments.
-        name: name of udf
-        attach_to_name: item in the system, to wich the udf is attached, such as
+
+        :param name: name of udf
+        :param attach_to_name: item in the system, to wich the udf is attached, such as
             Sample, Project, Container, or the name of a process.
-        attach_to_category: If 'attach_to_name' is the name of a process, such as 'CaliperGX QC (DNA)',
-             then you need to set attach_to_category='ProcessType'. Must not be provided otherwise.
-        start_index: Page to retrieve; all if None.
+        :param attach_to_category: If 'attach_to_name' is the name of a process, such as 'CaliperGX QC (DNA)',
+                                   then you need to set attach_to_category='ProcessType'. Must not be provided otherwise.
+        :param start_index: Page to retrieve; all if None.
+        :param add_info: Change the return type to a tuple where the first element is normal return and
+                         the second is a dict of additional information provided in the query.
+
         """
         params = self._get_params(name=name,
                                   attach_to_name=attach_to_name,
@@ -265,9 +282,12 @@ class Lims(object):
         return self._get_instances(Udfconfig, add_info=add_info, params=params)
 
     def get_reagent_types(self, name=None, start_index=None):
-        """Get a list of reqgent types, filtered by keyword arguments.
-        name: reagent type  name, or list of names.
-        start_index: Page to retrieve; all if None.
+        """
+        Get a list of reagent types, filtered by keyword arguments.
+
+        :param name: Reagent type  name, or list of names.
+        :param start_index: Page to retrieve; all if None.
+
         """
         params = self._get_params(name=name,
                                   start_index=start_index)
@@ -276,13 +296,17 @@ class Lims(object):
     def get_labs(self, name=None, last_modified=None,
                  udf=dict(), udtname=None, udt=dict(), start_index=None, add_info=False):
         """Get a list of labs, filtered by keyword arguments.
-        name: Lab name, or list of names.
-        last_modified: Since the given ISO format datetime.
-        udf: dictionary of UDFs with 'UDFNAME[OPERATOR]' as keys.
-        udtname: UDT name, or list of names.
-        udt: dictionary of UDT UDFs with 'UDTNAME.UDFNAME[OPERATOR]' as keys
-             and a string or list of strings as value.
-        start_index: Page to retrieve; all if None.
+
+        :param name: Lab name, or list of names.
+        :param last_modified: Since the given ISO format datetime.
+        :param udf: dictionary of UDFs with 'UDFNAME[OPERATOR]' as keys.
+        :param udtname: UDT name, or list of names.
+        :param udt: dictionary of UDT UDFs with 'UDTNAME.UDFNAME[OPERATOR]' as keys
+                    and a string or list of strings as value.
+        :param start_index: Page to retrieve; all if None.
+        :param add_info: Change the return type to a tuple where the first element is normal return and
+                         the second is a dict of additional information provided in the query.
+
         """
         params = self._get_params(name=name,
                                   last_modified=last_modified,
@@ -295,15 +319,19 @@ class Lims(object):
                         udf=dict(), udtname=None, udt=dict(), start_index=None,
                         add_info=False):
         """Get a list of researchers, filtered by keyword arguments.
-        firstname: Researcher first name, or list of names.
-        lastname: Researcher last name, or list of names.
-        username: Researcher account name, or list of names.
-        last_modified: Since the given ISO format datetime.
-        udf: dictionary of UDFs with 'UDFNAME[OPERATOR]' as keys.
-        udtname: UDT name, or list of names.
-        udt: dictionary of UDT UDFs with 'UDTNAME.UDFNAME[OPERATOR]' as keys
-             and a string or list of strings as value.
-        start_index: Page to retrieve; all if None.
+
+        :param firstname: Researcher first name, or list of names.
+        :param lastname: Researcher last name, or list of names.
+        :param username: Researcher account name, or list of names.
+        :param last_modified: Since the given ISO format datetime.
+        :param udf: dictionary of UDFs with 'UDFNAME[OPERATOR]' as keys.
+        :param udtname: UDT name, or list of names.
+        :param udt: dictionary of UDT UDFs with 'UDTNAME.UDFNAME[OPERATOR]' as keys
+                    and a string or list of strings as value.
+        :param start_index: Page to retrieve; all if None.
+        :param add_info: Change the return type to a tuple where the first element is normal return and
+                         the second is a dict of additional information provided in the query.
+
         """
         params = self._get_params(firstname=firstname,
                                   lastname=lastname,
@@ -317,14 +345,18 @@ class Lims(object):
                      udf=dict(), udtname=None, udt=dict(), start_index=None,
                      add_info=False):
         """Get a list of projects, filtered by keyword arguments.
-        name: Project name, or list of names.
-        open_date: Since the given ISO format date.
-        last_modified: Since the given ISO format datetime.
-        udf: dictionary of UDFs with 'UDFNAME[OPERATOR]' as keys.
-        udtname: UDT name, or list of names.
-        udt: dictionary of UDT UDFs with 'UDTNAME.UDFNAME[OPERATOR]' as keys
-             and a string or list of strings as value.
-        start_index: Page to retrieve; all if None.
+
+        :param name: Project name, or list of names.
+        :param open_date: Since the given ISO format date.
+        :param last_modified: Since the given ISO format datetime.
+        :param udf: dictionary of UDFs with 'UDFNAME[OPERATOR]' as keys.
+        :param udtname: UDT name, or list of names.
+        :param udt: dictionary of UDT UDFs with 'UDTNAME.UDFNAME[OPERATOR]' as keys
+                    and a string or list of strings as value.
+        :param start_index: Page to retrieve; all if None.
+        :param add_info: Change the return type to a tuple where the first element is normal return and
+                         the second is a dict of additional information provided in the query.
+
         """
         params = self._get_params(name=name,
                                   open_date=open_date,
@@ -335,8 +367,10 @@ class Lims(object):
 
     def get_sample_number(self, name=None, projectname=None, projectlimsid=None,
                           udf=dict(), udtname=None, udt=dict(), start_index=None):
-        """Gets the number of samples matching the query without fetching every
-        sample, so it should be faster than len(get_samples()"""
+        """
+        Gets the number of samples matching the query without fetching every
+        sample, so it should be faster than len(get_samples())
+        """
         params = self._get_params(name=name,
                                   projectname=projectname,
                                   projectlimsid=projectlimsid,
@@ -354,14 +388,16 @@ class Lims(object):
     def get_samples(self, name=None, projectname=None, projectlimsid=None,
                     udf=dict(), udtname=None, udt=dict(), start_index=None):
         """Get a list of samples, filtered by keyword arguments.
-        name: Sample name, or list of names.
-        projectlimsid: Samples for the project of the given LIMS id.
-        projectname: Samples for the project of the name.
-        udf: dictionary of UDFs with 'UDFNAME[OPERATOR]' as keys.
-        udtname: UDT name, or list of names.
-        udt: dictionary of UDT UDFs with 'UDTNAME.UDFNAME[OPERATOR]' as keys
-             and a string or list of strings as value.
-        start_index: Page to retrieve; all if None.
+
+        :param name: Sample name, or list of names.
+        :param projectlimsid: Samples for the project of the given LIMS id.
+        :param projectname: Samples for the project of the name.
+        :param udf: dictionary of UDFs with 'UDFNAME[OPERATOR]' as keys.
+        :param udtname: UDT name, or list of names.
+        :param udt: dictionary of UDT UDFs with 'UDTNAME.UDFNAME[OPERATOR]' as keys
+                    and a string or list of strings as value.
+        :param start_index: Page to retrieve; all if None.
+
         """
         params = self._get_params(name=name,
                                   projectname=projectname,
@@ -377,23 +413,26 @@ class Lims(object):
                       udf=dict(), udtname=None, udt=dict(), start_index=None,
                       resolve=False):
         """Get a list of artifacts, filtered by keyword arguments.
-        name: Artifact name, or list of names.
-        type: Artifact type, or list of types.
-        process_type: Produced by the process type, or list of types.
-        artifact_flag_name: Tagged with the genealogy flag, or list of flags.
-        working_flag: Having the given working flag; boolean.
-        qc_flag: Having the given QC flag: UNKNOWN, PASSED, FAILED.
-        sample_name: Related to the given sample name.
-        samplelimsid: Related to the given sample id.
-        artifactgroup: Belonging to the artifact group (experiment in client).
-        containername: Residing in given container, by name, or list.
-        containerlimsid: Residing in given container, by LIMS id, or list.
-        reagent_label: having attached reagent labels.
-        udf: dictionary of UDFs with 'UDFNAME[OPERATOR]' as keys.
-        udtname: UDT name, or list of names.
-        udt: dictionary of UDT UDFs with 'UDTNAME.UDFNAME[OPERATOR]' as keys
-             and a string or list of strings as value.
-        start_index: Page to retrieve; all if None.
+
+        :param name: Artifact name, or list of names.
+        :param type: Artifact type, or list of types.
+        :param process_type: Produced by the process type, or list of types.
+        :param artifact_flag_name: Tagged with the genealogy flag, or list of flags.
+        :param working_flag: Having the given working flag; boolean.
+        :param qc_flag: Having the given QC flag: UNKNOWN, PASSED, FAILED.
+        :param sample_name: Related to the given sample name.
+        :param samplelimsid: Related to the given sample id.
+        :param artifactgroup: Belonging to the artifact group (experiment in client).
+        :param containername: Residing in given container, by name, or list.
+        :param containerlimsid: Residing in given container, by LIMS id, or list.
+        :param reagent_label: having attached reagent labels.
+        :param udf: dictionary of UDFs with 'UDFNAME[OPERATOR]' as keys.
+        :param udtname: UDT name, or list of names.
+        :param udt: dictionary of UDT UDFs with 'UDTNAME.UDFNAME[OPERATOR]' as keys
+                    and a string or list of strings as value.
+        :param start_index: Page to retrieve; all if None.
+        :param resolve: Send a batch query to the lims to get the content of all artifacts retrieved
+
         """
         params = self._get_params(name=name,
                                   type=type,
@@ -419,15 +458,19 @@ class Lims(object):
                        udf=dict(), udtname=None, udt=dict(), start_index=None,
                        add_info=False):
         """Get a list of containers, filtered by keyword arguments.
-        name: Containers name, or list of names.
-        type: Container type, or list of types.
-        state: Container state: Empty, Populated, Discarded, Reagent-Only.
-        last_modified: Since the given ISO format datetime.
-        udf: dictionary of UDFs with 'UDFNAME[OPERATOR]' as keys.
-        udtname: UDT name, or list of names.
-        udt: dictionary of UDT UDFs with 'UDTNAME.UDFNAME[OPERATOR]' as keys
-             and a string or list of strings as value.
-        start_index: Page to retrieve; all if None.
+
+        :param name: Containers name, or list of names.
+        :param type: Container type, or list of types.
+        :param state: Container state: Empty, Populated, Discarded, Reagent-Only.
+        :param last_modified: Since the given ISO format datetime.
+        :param udf: dictionary of UDFs with 'UDFNAME[OPERATOR]' as keys.
+        :param udtname: UDT name, or list of names.
+        :param udt: dictionary of UDT UDFs with 'UDTNAME.UDFNAME[OPERATOR]' as keys
+                    and a string or list of strings as value.
+        :param start_index: Page to retrieve; all if None.
+        :param add_info: Change the return type to a tuple where the first element is normal return and
+                         the second is a dict of additional information provided in the query.
+
         """
         params = self._get_params(name=name,
                                   type=type,
@@ -439,8 +482,12 @@ class Lims(object):
 
     def get_container_types(self, name=None, start_index=None, add_info=False):
         """Get a list of container types, filtered by keyword arguments.
-        name: name of the container type or list of names.
-        start_index: Page to retrieve; all if None.
+
+        :param name: name of the container type or list of names.
+        :param start_index: Page to retrieve; all if None.
+        :param add_info: Change the return type to a tuple where the first element is normal return and
+                         the second is a dict of additional information provided in the query.
+
         """
         params = self._get_params(name=name, start_index=start_index)
         return self._get_instances(Containertype, add_info=add_info, params=params)
@@ -450,17 +497,21 @@ class Lims(object):
                       techfirstname=None, techlastname=None, projectname=None,
                       udf=dict(), udtname=None, udt=dict(), start_index=None):
         """Get a list of processes, filtered by keyword arguments.
-        last_modified: Since the given ISO format datetime.
-        type: Process type, or list of types.
-        inputartifactlimsid: Input artifact LIMS id, or list of.
-        udf: dictionary of UDFs with 'UDFNAME[OPERATOR]' as keys.
-        udtname: UDT name, or list of names.
-        udt: dictionary of UDT UDFs with 'UDTNAME.UDFNAME[OPERATOR]' as keys
-             and a string or list of strings as value.
-        techfirstname: First name of researcher, or list of.
-        techlastname: Last name of researcher, or list of.
-        projectname: Name of project, or list of.
-        start_index: Page to retrieve; all if None.
+
+        :param last_modified: Since the given ISO format datetime.
+        :param type: Process type, or list of types.
+        :param inputartifactlimsid: Input artifact LIMS id, or list of.
+        :param udf: dictionary of UDFs with 'UDFNAME[OPERATOR]' as keys.
+        :param udtname: UDT name, or list of names.
+        :param udt: dictionary of UDT UDFs with 'UDTNAME.UDFNAME[OPERATOR]' as keys
+                    and a string or list of strings as value.
+        :param techfirstname: First name of researcher, or list of.
+        :param techlastname: Last name of researcher, or list of.
+        :param projectname: Name of project, or list of.
+        :param start_index: Page to retrieve; all if None.
+        :param add_info: Change the return type to a tuple where the first element is normal return and
+                         the second is a dict of additional information provided in the query.
+
         """
         params = self._get_params(last_modified=last_modified,
                                   type=type,
@@ -473,28 +524,61 @@ class Lims(object):
         return self._get_instances(Process, params=params)
 
     def get_workflows(self, name=None, add_info=False):
-        """Get the list of existing workflows on the system """
+        """
+        Get the list of existing workflows on the system.
+
+        :param name: The name of the workflow you're looking for
+        :param add_info: Change the return type to a tuple where the first element is normal return and
+                         the second is a dict of additional information provided in the query.
+
+        """
         params = self._get_params(name=name)
         return self._get_instances(Workflow, add_info=add_info, params=params)
 
     def get_process_types(self, displayname=None, add_info=False):
-        """Get a list of process types with the specified name."""
+        """
+        Get a list of process types with the specified name.
+
+        :param displayname: The name the process type
+        :param add_info: Change the return type to a tuple where the first element is normal return and
+                         the second is a dict of additional information provided in the query.
+
+        """
         params = self._get_params(displayname=displayname)
         return self._get_instances(Processtype, add_info=add_info, params=params)
 
     def get_reagent_types(self, name=None, add_info=False):
+        """
+       Get a list of reagent types with the specified name.
+
+       :param name: The name the reagent type
+       :param add_info: Change the return type to a tuple where the first element is normal return and
+       the second is a dict of additional information provided in the query.
+
+       """
         params = self._get_params(name=name)
         return self._get_instances(ReagentType, add_info=add_info, params=params)
 
     def get_protocols(self, name=None, add_info=False):
-        """Get the list of existing protocols on the system """
+        """
+        Get the list of existing protocols on the system.
+
+        :param name: The name the protocol
+        :param add_info: Change the return type to a tuple where the first element is normal return and
+                         the second is a dict of additional information provided in the query.
+
+        """
         params = self._get_params(name=name)
         return self._get_instances(Protocol, add_info=add_info, params=params)
 
     def get_reagent_kits(self, name=None, start_index=None, add_info=False):
         """Get a list of reagent kits, filtered by keyword arguments.
-        name: reagent kit  name, or list of names.
-        start_index: Page to retrieve; all if None.
+
+        :param name: reagent kit  name, or list of names.
+        :param start_index: Page to retrieve; all if None.
+        :param add_info: Change the return type to a tuple where the first element is normal return and
+                         the second is a dict of additional information provided in the query.
+
         """
         params = self._get_params(name=name,
                                   start_index=start_index)
@@ -503,10 +587,12 @@ class Lims(object):
     def get_reagent_lots(self, name=None, kitname=None, number=None,
                          start_index=None):
         """Get a list of reagent lots, filtered by keyword arguments.
-        name: reagent kit  name, or list of names.
-        kitname: name of the kit this lots belong to
-        number: lot number or list of lot number
-        start_index: Page to retrieve; all if None.
+
+        :param name: reagent kit  name, or list of names.
+        :param kitname: name of the kit this lots belong to
+        :param number: lot number or list of lot number
+        :param start_index: Page to retrieve; all if None.
+
         """
         params = self._get_params(name=name, kitname=kitname, number=number,
                                   start_index=start_index)
@@ -527,6 +613,9 @@ class Lims(object):
         The batch request API call collapses all requested Artifacts with different
         state into a single result with state equal to the state of the Artifact
         occurring at the last position in the list.
+
+        :param instances: List of instances children of Entity
+        :param force: optional argument to force the download of already cached instances
         """
         if not instances:
             return []
@@ -550,7 +639,12 @@ class Lims(object):
         return instance_map.values()
 
     def put_batch(self, instances):
-        """Update multiple instances using a single batch request."""
+        """
+        Update multiple instances using a single batch request.
+
+        :param instances: List of instances children of Entity
+
+        """
 
         if not instances:
             return
@@ -572,6 +666,16 @@ class Lims(object):
         root = self.post(uri, data)
 
     def route_artifacts(self, artifact_list, workflow_uri=None, stage_uri=None, unassign=False):
+        """
+        Take a list of artifact and queue them to the stage specified by the stage uri. if a workflow uri is specified,
+        the artifacts will be queued to the first stage of the workflow.
+
+        :param artifact_list: list of Artifact.
+        :param workflow_uri: The uri of the workflow.
+        :param stage_uri: The uri of the stage.
+        :param unassign: If True, then the artifact will be removed from the queue instead of added.
+
+        """
         root = ElementTree.Element(nsmap('rt:routing'))
         if unassign:
             s = ElementTree.SubElement(root, 'unassign')
@@ -592,11 +696,11 @@ class Lims(object):
         self.validate_response(r)
 
     def tostring(self, etree):
-        "Return the ElementTree contents as a UTF-8 encoded XML string."
+        """Return the ElementTree contents as a UTF-8 encoded XML string."""
         outfile = BytesIO()
         self.write(outfile, etree)
         return outfile.getvalue()
 
     def write(self, outfile, etree):
-        "Write the ElementTree contents as UTF-8 encoded XML to the open file."
+        """Write the ElementTree contents as UTF-8 encoded XML to the open file."""
         etree.write(outfile, encoding='utf-8', xml_declaration=True)
