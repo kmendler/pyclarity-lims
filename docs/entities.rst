@@ -3,6 +3,8 @@ Entites object
 ==========================================
 
 .. automodule:: pyclarity_lims.entities
-   :members:
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 

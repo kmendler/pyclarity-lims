@@ -1,13 +1,11 @@
-
 Practical Examples
 ==================
 
-
 Change value of a UDF of all artifacts of a Step in progress
------------------------------------------------------------
+------------------------------------------------------------
 
 The goal of this example is to show how you could change the value of a UDF named udfname in all input artifacts.
-This example assume you have a :py:class:`Lims <pyclarity_lims.lims.Lims>` and a process id
+This example assume you have a :py:class:`Lims <pyclarity_lims.lims.Lims>` and a process id.
 
 .. code::
 
@@ -20,7 +18,7 @@ This example assume you have a :py:class:`Lims <pyclarity_lims.lims.Lims>` and a
             # upload the artifact back to the Lims
             artifact.put()
 
-In some cases the  we want to optimise the number of query and make use of the batched query the API offers
+In some cases the  we want to optimise the number of query and make use of the batched query the API offers.
 
 .. code::
 
@@ -33,7 +31,7 @@ In some cases the  we want to optimise the number of query and make use of the b
         l.batch_put(p.all_inputs())
 
 Find all the samples that went through a Step with a specific udf value
-----------------------------------------------------------------------
+-----------------------------------------------------------------------
 
 This is a typical search that is performed when searching for sample that went through a specific sequencing run.
 
@@ -50,7 +48,7 @@ This is a typical search that is performed when searching for sample that went t
 Make sure to have the up-to-date program status
 -----------------------------------------------
 
-Because all the entities are cached, sometime the information get out of date especially when it is changing rapidly: like the status of a running program
+Because all the entities are cached, sometime the information get out of date especially when it is changing rapidly: like the status of a running program.
 
 .. code::
 
@@ -60,14 +58,15 @@ Because all the entities are cached, sometime the information get out of date es
         s.program_status.status  # return RUNNING because it is still cached
         s.program_status.get(force=True)
         s.program_status.status  # return COMPLETE
-the function :py:func:`get <pyclarity_lims.entities.Entity.get>` is most of the time used implicitly
-but can be used explicitly with the force option to bypass the cache and retrieve an up-to-date version of the instance
+
+The function :py:func:`get <pyclarity_lims.entities.Entity.get>` is most of the time used implicitly
+but can be used explicitly with the force option to bypass the cache and retrieve an up-to-date version of the instance.
 
 Create sample with a Specific udfs
 ----------------------------------
 
 So far we always retrieve entities from the LIMS and in some case modified them before uploading them back.
-We can also create some of these entities and upload them to the LIMS. Here is how to create a sample
+We can also create some of these entities and upload them to the LIMS. Here is how to create a sample.
 
 .. code::
 
@@ -79,7 +78,7 @@ Start a new Step from submitted samples
 
 Creating a step, filling in the placement and the next actions then completing the step
 can be very convenient when you want to automate the execution of part of your workflow.
-Here is an example with on sample placed into a tube
+Here is an example with one sample placed into a tube.
 
 .. code::
 
