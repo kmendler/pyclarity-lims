@@ -55,7 +55,7 @@ class Lims(object):
 
     VERSION = 'v2'
 
-    def __init__(self, baseuri, username, password, version=VERSION):
+    def __init__(self, baseuri, username, password, version=VERSION, timeout=TIMEOUT):
 
         self.baseuri = baseuri.rstrip('/') + '/'
         self.username = username
