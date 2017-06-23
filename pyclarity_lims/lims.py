@@ -503,7 +503,7 @@ class Lims(object):
 
        :param name: The name the reagent type
        :param add_info: Change the return type to a tuple where the first element is normal return and
-       the second is a dict of additional information provided in the query.
+                        the second is a dict of additional information provided in the query.
 
        """
         params = self._get_params(name=name)
