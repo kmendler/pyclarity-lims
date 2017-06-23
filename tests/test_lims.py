@@ -1,4 +1,3 @@
-import xml
 from unittest import TestCase
 
 from requests.exceptions import HTTPError
@@ -19,6 +18,7 @@ else:
     from unittest.mock import patch, Mock
     import builtins
 
+
 class TestLims(TestCase):
     url = 'http://testgenologics.com:4040'
     username = 'test'
@@ -36,11 +36,9 @@ class TestLims(TestCase):
 <exc:exception xmlns:exc="http://pyclarity_lims.com/ri/exception">
 </exc:exception>"""
 
-
     def test_get_uri(self):
         lims = Lims(self.url, username=self.username, password=self.password)
         assert lims.get_uri('artifacts',sample_name='test_sample') == '{url}/api/v2/artifacts?sample_name=test_sample'.format(url=self.url)
-
 
     def test_parse_response(self):
         lims = Lims(self.url, username=self.username, password=self.password)
@@ -55,7 +53,6 @@ class TestLims(TestCase):
 
         r = Mock(content = self.error_no_msg_xml, status_code=400)
         self.assertRaises(HTTPError, lims.parse_response, r)
-
 
     @patch('requests.Session.request',return_value=Mock(content = sample_xml, status_code=200))
     def test_get(self, mocked_instance):
@@ -89,7 +86,6 @@ class TestLims(TestCase):
         with patch('requests.Session.request', return_value=Mock(content = self.error_xml, status_code=400)) as mocked_put:
             self.assertRaises(HTTPError, lims.post, uri=uri, data=self.sample_xml)
             assert mocked_put.call_count == 1
-
 
     @patch('os.path.isfile', return_value=True)
     @patch.object(builtins, 'open')
@@ -126,8 +122,6 @@ class TestLims(TestCase):
         lims.route_artifacts(artifact_list=[artifact], workflow_uri=self.url+'/api/v2/configuration/workflows/1')
         assert mocked_post.call_count == 1
 
-
-
     def test_tostring(self):
         lims = Lims(self.url, username=self.username, password=self.password)
         from xml.etree import ElementTree as ET
@@ -141,5 +135,16 @@ class TestLims(TestCase):
         string = lims.tostring(etree)
         assert string == expected_string
 
+    def test_get_file_contents(self):
+        lims = Lims(self.url, username=self.username, password=self.password)
+        lims.validate_response = Mock()
+        lims.request_session = Mock(get=Mock(return_value=Mock(encoding=None, text='some data\r\n')))
+        exp_url = self.url + '/api/v2/files/an_id/download'
 
+        assert lims.get_file_contents(uri=self.url + '/api/v2/files/an_id') == 'some data\r\n'
+        assert lims.request_session.get.return_value.encoding is None
+        lims.request_session.get.assert_called_with(exp_url, auth=(self.username, self.password), timeout=16)
 
+        assert lims.get_file_contents(id='an_id', encoding='utf-16', crlf=True) == 'some data\n'
+        assert lims.request_session.get.return_value.encoding == 'utf-16'
+        lims.request_session.get.assert_called_with(exp_url, auth=(self.username, self.password), timeout=16)

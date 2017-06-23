@@ -115,6 +115,7 @@ class Lims(object):
         else:
             return self.parse_response(r)
 
+    def get_file_contents(self, id=None, uri=None, encoding=None, crlf=False):
     def put(self, uri, data, params=dict()):
         """PUT the serialized XML to the given URI.
         Return the response XML as an ElementTree.
@@ -217,18 +218,21 @@ class Lims(object):
         else:
             return results
 
-    def get_file_contents(self, id=None, uri=None):
-        """Returns the contents of the file of <ID> or <uri>"""
-        if id:
-            segments = ['api', self.VERSION, 'files', id, 'download']
-        elif uri:
-            segments = [uri, 'download']
-        else:
-            raise ValueError("id or uri required")
-        url = urljoin(self.baseuri, '/'.join(segments))
-        r = self._req('GET', url)
-        self.validate_response(r)
-        return r.text
+        def get_file_contents(self, id=None, uri=None, encoding=None, crlf=False):
+            """Returns the contents of the file of <ID> or <uri>"""
+            if id:
+                url = self.get_uri('files', id, 'download')
+            elif uri:
+                url = uri.rstrip('/') + '/download'
+            else:
+                raise ValueError('id or uri required')
+
+            r = self.request_session.get(url, auth=(self.username, self.password), timeout=TIMEOUT)
+            self.validate_response(r)
+            if encoding:
+                r.encoding = encoding
+
+            return r.text.replace('\r\n', '\n') if crlf else r.text
 
     def upload_new_file(self, entity, file_to_upload):
         """Upload a file and attach it to the provided entity."""
@@ -553,7 +557,7 @@ class Lims(object):
 
        :param name: The name the reagent type
        :param add_info: Change the return type to a tuple where the first element is normal return and
-       the second is a dict of additional information provided in the query.
+                        the second is a dict of additional information provided in the query.
 
        """
         params = self._get_params(name=name)

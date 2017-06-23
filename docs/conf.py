@@ -99,9 +99,7 @@ html_theme_options = {
     'fixed_sidebar': True,
     'github_user': 'EdinburghGenomics',
     'github_repo': 'pyclarity-lims',
-    'github_button': True,
-    'travis_button': True,
-    'codecov_button': True
+    'github_button': True
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
