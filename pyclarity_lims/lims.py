@@ -92,15 +92,14 @@ class Lims(object):
     def get_file_contents(self, id=None, uri=None, encoding=None, crlf=False):
         """Returns the contents of the file of <ID> or <uri>"""
         if id:
-            segments = ['api', self.VERSION, 'files', id, 'download']
+            url = self.get_uri('files', id, 'download')
         elif uri:
-            segments = [uri, 'download']
+            url = uri.rstrip('/') + '/download'
         else:
-            raise ValueError("id or uri required")
-        url = urljoin(self.baseuri, '/'.join(segments))
+            raise ValueError('id or uri required')
+
         r = self.request_session.get(url, auth=(self.username, self.password), timeout=TIMEOUT)
         self.validate_response(r)
-
         if encoding:
             r.encoding = encoding
 

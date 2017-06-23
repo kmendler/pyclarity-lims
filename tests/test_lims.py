@@ -133,16 +133,16 @@ class TestLims(TestCase):
         string = lims.tostring(etree)
         assert string == expected_string
 
-    @patch('pyclarity_lims.lims.urljoin', return_value='a_url')
-    def test_get_file_contents(self, mocked_urljoin):
+    def test_get_file_contents(self):
         lims = Lims(self.url, username=self.username, password=self.password)
         lims.validate_response = Mock()
         lims.request_session = Mock(get=Mock(return_value=Mock(encoding=None, text='some data\r\n')))
+        exp_url = self.url + '/api/v2/files/an_id/download'
 
-        assert lims.get_file_contents(id='an_id') == 'some data\r\n'
+        assert lims.get_file_contents(uri=self.url + '/api/v2/files/an_id') == 'some data\r\n'
         assert lims.request_session.get.return_value.encoding is None
+        lims.request_session.get.assert_called_with(exp_url, auth=(self.username, self.password), timeout=16)
 
         assert lims.get_file_contents(id='an_id', encoding='utf-16', crlf=True) == 'some data\n'
         assert lims.request_session.get.return_value.encoding == 'utf-16'
-
-        mocked_urljoin.assert_called_with('http://testgenologics.com:4040/', 'api/v2/files/an_id/download')
+        lims.request_session.get.assert_called_with(exp_url, auth=(self.username, self.password), timeout=16)
