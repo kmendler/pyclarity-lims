@@ -138,13 +138,13 @@ class TestLims(TestCase):
     def test_get_file_contents(self):
         lims = Lims(self.url, username=self.username, password=self.password)
         lims.validate_response = Mock()
-        lims.request_session = Mock(get=Mock(return_value=Mock(encoding=None, text='some data\r\n')))
+        lims.request_session = Mock(request=Mock(return_value=Mock(encoding=None, text='some data\r\n')))
         exp_url = self.url + '/api/v2/files/an_id/download'
 
         assert lims.get_file_contents(uri=self.url + '/api/v2/files/an_id') == 'some data\r\n'
-        assert lims.request_session.get.return_value.encoding is None
-        lims.request_session.get.assert_called_with(exp_url, auth=(self.username, self.password), timeout=16)
+        assert lims.request_session.request.return_value.encoding is None
+        lims.request_session.request.assert_called_with('GET', exp_url)
 
         assert lims.get_file_contents(id='an_id', encoding='utf-16', crlf=True) == 'some data\n'
-        assert lims.request_session.get.return_value.encoding == 'utf-16'
-        lims.request_session.get.assert_called_with(exp_url, auth=(self.username, self.password), timeout=16)
+        assert lims.request_session.request.return_value.encoding == 'utf-16'
+        lims.request_session.request.assert_called_with('GET', exp_url)
