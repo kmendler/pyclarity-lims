@@ -8,6 +8,7 @@ Lims connection
 ---------------
 
 To create a lims connection you'll need to create a :py:class:`Lims <pyclarity_lims.lims.Lims>` object.
+
 .. code::
 
         from pyclarity_lims.lims import Lims
