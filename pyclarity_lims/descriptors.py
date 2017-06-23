@@ -230,7 +230,10 @@ class UdfDictionary(Nestable, XmlDictionary):
 
 
 class XmlElementAttributeDict(XmlDictionary, Nestable):
-    """Dictionary of attributes for a specific xml element. It will find all the ta
+    """
+    Dictionary of attributes for a specific xml element.
+    It will find all the elements with the specified tag and use the one in the provided position
+    then put all attributes of that tag in a dict.
     The key is the attribute's name and value is the attribute's value.
     """
 
@@ -262,14 +265,12 @@ class XmlElementAttributeDict(XmlDictionary, Nestable):
 
 
 class XmlAction(XmlElementAttributeDict):
-    def __init__(self, instance, tag, nesting,  *args, **kwargs):
-        XmlElementAttributeDict.__init__(
-            self, instance, tag=tag,
-            position=kwargs.pop('position', 0),
-            nesting=nesting,
-            *args, **kwargs
-        )
-
+    """
+    One Action of a list of action. The Action is store in an XmlElementAttributeDict with specific keys
+    artifact: The Artifact associated with this Action
+    step: The next step associated with this action
+    rework-step: The step associated with this action when the Artifact need to be requeued
+    """
     def _parse_element(self, element, **kwargs):
         from pyclarity_lims.entities import Artifact, Step
         for k, v in element.attrib.items():
