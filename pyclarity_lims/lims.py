@@ -52,10 +52,10 @@ class Lims(object):
     def __init__(self, baseuri, username, password, version=VERSION):
         """baseuri: Base URI for the GenoLogics server, excluding
                     the 'api' or version parts!
-                    For example: https://pyclarity_lims.scilifelab.se:8443/
+                    For example: https://genologics.scilifelab.se:8443/
         username: The account name of the user to login as.
         password: The password for the user account to login as.
-        version: The optional LIMS API version, by default 'v2' 
+        version: The optional LIMS API version, by default 'v2'
         """
         self.baseuri = baseuri.rstrip('/') + '/'
         self.username = username
@@ -200,7 +200,7 @@ class Lims(object):
     def get_udfs(self, name=None, attach_to_name=None, attach_to_category=None, start_index=None, add_info=False):
         """Get a list of udfs, filtered by keyword arguments.
         name: name of udf
-        attach_to_name: item in the system, to wich the udf is attached, such as 
+        attach_to_name: item in the system, to wich the udf is attached, such as
             Sample, Project, Container, or the name of a process.
         attach_to_category: If 'attach_to_name' is the name of a process, such as 'CaliperGX QC (DNA)',
              then you need to set attach_to_category='ProcessType'. Must not be provided otherwise.
@@ -385,6 +385,14 @@ class Lims(object):
         params.update(self._get_params_udf(udf=udf, udtname=udtname, udt=udt))
         return self._get_instances(Container, add_info=add_info, params=params)
 
+    def get_container_types(self, name=None, start_index=None, add_info=False):
+        """Get a list of container types, filtered by keyword arguments.
+        name: name of the container type or list of names.
+        start_index: Page to retrieve; all if None.
+        """
+        params = self._get_params(name=name, start_index=start_index)
+        return self._get_instances(Containertype, add_info=add_info, params=params)
+
     def get_processes(self, last_modified=None, type=None,
                       inputartifactlimsid=None,
                       techfirstname=None, techlastname=None, projectname=None,
@@ -483,7 +491,7 @@ class Lims(object):
                 results.append(klass(self, uri=node.attrib['uri']))
                 info_dict = {}
                 for attrib_key in node.attrib:
-                    info_dict[attrib_key] = node.attrib['uri']
+                    info_dict[attrib_key] = node.attrib[attrib_key]
                 for subnode in node:
                     info_dict[subnode.tag] = subnode.text
                 additionnal_info_dicts.append(info_dict)

@@ -2,9 +2,10 @@ from sys import version_info
 from unittest import TestCase
 from xml.etree import ElementTree
 
-from pyclarity_lims.entities import StepActions, Researcher, Artifact, \
+from pyclarity_lims.entities import ProtocolStep, StepActions, Researcher, Artifact, \
     Step, StepPlacements, Container, Stage, ReagentKit, ReagentLot, Sample, Project
 from pyclarity_lims.lims import Lims
+from tests import NamedMock, elements_equal
 
 if version_info[0] == 2:
     from mock import patch, Mock
@@ -16,7 +17,7 @@ url = 'http://testgenologics.com:4040'
 ########
 # Entities in XML
 generic_artifact_xml = """<?xml version='1.0' encoding='utf-8'?>
-<art:artifact xmlns:art="http://pyclarity_lims.com/ri/artifact"  xmlns:file="http://pyclarity_lims.com/ri/file" xmlns:udf="http://pyclarity_lims.com/ri/userdefined"  uri="{url}/api/v2/artifacts/a1" limsid="a1">
+<art:artifact xmlns:art="http://genologics.com/ri/artifact"  xmlns:file="http://genologics.com/ri/file" xmlns:udf="http://genologics.com/ri/userdefined"  uri="{url}/api/v2/artifacts/a1" limsid="a1">
 <name>test_sample1</name>
 <type>Analyte</type>
 <output-type>Analyte</output-type>
@@ -36,7 +37,7 @@ generic_artifact_xml = """<?xml version='1.0' encoding='utf-8'?>
 </art:artifact>"""
 
 generic_step_placements_xml = """<?xml version='1.0' encoding='utf-8'?>
-<stp:placements xmlns:stp="http://pyclarity_lims.com/ri/step" uri="{url}/steps/s1/placements">
+<stp:placements xmlns:stp="http://genologics.com/ri/step" uri="{url}/steps/s1/placements">
   <step uri="{url}/steps/s1" />
   <configuration uri="{url}/configuration/protocols/1/steps/1">Step name</configuration>
   <selected-containers>
@@ -59,7 +60,7 @@ generic_step_placements_xml = """<?xml version='1.0' encoding='utf-8'?>
 </stp:placements>"""
 
 generic_reagentkit_xml = """<?xml version='1.0' encoding='utf-8'?>
-<kit:reagent-kit xmlns:kit="http://pyclarity_lims.com/ri/reagentkit" uri="{url}:8080/api/v2/reagentkits/r1">
+<kit:reagent-kit xmlns:kit="http://genologics.com/ri/reagentkit" uri="{url}:8080/api/v2/reagentkits/r1">
 <name>regaentkitname</name>
 <supplier>reagentProvider</supplier>
 <website>www.reagentprovider.com</website>
@@ -67,7 +68,7 @@ generic_reagentkit_xml = """<?xml version='1.0' encoding='utf-8'?>
 </kit:reagent-kit>"""
 
 generic_reagentlot_xml = """<?xml version='1.0' encoding='utf-8'?>
-<lot:reagent-lot xmlns:lot="http://pyclarity_lims.com/ri/reagentlot" limsid="l1" uri="{url}/api/v2/reagentlots/l1">
+<lot:reagent-lot xmlns:lot="http://genologics.com/ri/reagentlot" limsid="l1" uri="{url}/api/v2/reagentlots/l1">
 <reagent-kit uri="{url}/api/v2/reagentkits/r1" name="kitname"/>
 <name>kitname</name>
 <lot-number>100</lot-number>
@@ -80,7 +81,30 @@ generic_reagentlot_xml = """<?xml version='1.0' encoding='utf-8'?>
 <usage-count>1</usage-count>
 </lot:reagent-lot>"""
 
-generic_step_actions_xml = """<stp:actions xmlns:stp="http://pyclarity_lims.com/ri/step" uri="...">
+generic_step = """<?xml version='1.0' encoding='utf-8'?>
+<stp:step xmlns:stp="http://genologics.com/ri/step" current-state="Completed" limsid="{stepid}" uri="{url}/api/v2/steps/{stepid}">
+<configuration uri="{url}/api/v2/configuration/protocols/p1/steps/p1s1">My fancy protocol</configuration>
+<date-started>2016-11-22T10:43:32.857+00:00</date-started>
+<date-completed>2016-11-22T14:31:14.100+00:00</date-completed>
+<actions uri="{url}/api/v2/steps/{stepid}/actions"/>
+<placements uri="{url}/api/v2/steps/{stepid}/placements"/>
+<program-status uri="{url}/api/v2/steps/{stepid}/programstatus"/>
+<details uri="{url}/api/v2/steps/{stepid}/details"/>
+<available-programs>
+<available-program name="program1" uri="{url}/api/v2/steps/{stepid}/trigger/t1"/>
+<available-program name="program2" uri="{url}/api/v2/steps/{stepid}/trigger/t2"/>
+</available-programs>
+</stp:step>"""
+
+generic_step_program_status = """<?xml version='1.0' encoding='utf-8'?>
+<stp:program-status xmlns:stp="http://genologics.com/ri/step" uri="{url}/api/v2/steps/{stepid}/programstatus">
+<step uri="{url}/api/v2/steps/{stepid}" rel="steps"/>
+<configuration uri="{url}/api/v2/configuration/protocols/p1/steps/p1s1">My fancy protocol</configuration>
+<status>ERROR</status>
+<message>Traceback Error message</message>
+</stp:program-status>"""
+
+generic_step_actions_xml = """<stp:actions xmlns:stp="http://genologics.com/ri/step" uri="...">
   <step rel="..." uri="{url}/steps/s1">
   </step>
   <configuration uri="{url}/config/1">...</configuration>
@@ -116,7 +140,7 @@ generic_step_actions_xml = """<stp:actions xmlns:stp="http://pyclarity_lims.com/
   </escalation>
 </stp:actions>"""
 
-generic_step_actions_no_escalation_xml = """<stp:actions xmlns:stp="http://pyclarity_lims.com/ri/step" uri="...">
+generic_step_actions_no_escalation_xml = """<stp:actions xmlns:stp="http://genologics.com/ri/step" uri="...">
   <step rel="..." uri="{url}/steps/s1">
   </step>
   <configuration uri="{url}/config/1">...</configuration>
@@ -127,7 +151,7 @@ generic_step_actions_no_escalation_xml = """<stp:actions xmlns:stp="http://pycla
 </stp:actions>"""
 
 generic_sample_creation_xml = """
-<smp:samplecreation xmlns:smp="http://pyclarity_lims.com/ri/sample" limsid="s1" uri="{url}/api/v2/samples/s1">
+<smp:samplecreation xmlns:smp="http://genologics.com/ri/sample" limsid="s1" uri="{url}/api/v2/samples/s1">
   <location>
     <container limsid="cont1" uri="{url}/api/v2/containers/cont1">
     </container>
@@ -146,23 +170,6 @@ class TestEntities(TestCase):
         pass
 
 
-def elements_equal(e1, e2):
-    if e1.tag != e2.tag:
-        print('Tag: %s != %s'%(e1.tag, e2.tag))
-        return False
-    if e1.text and e2.text and e1.text.strip() != e2.text.strip():
-        print('Text: %s != %s' % (e1.text.strip(), e2.text.strip()))
-        return False
-    if e1.tail and e2.tail and e1.tail.strip() != e2.tail.strip():
-        print('Tail: %s != %s' % (e1.tail.strip(), e2.tail.strip()))
-        return False
-    if e1.attrib != e2.attrib:
-        print('Attrib: %s != %s' % (e1.attrib, e2.attrib))
-        return False
-    if len(e1) != len(e2):
-        print('length %s (%s) != length (%s) ' % (e1.tag, len(e1), e2.tag, len(e2)))
-        return False
-    return all(elements_equal(c1, c2) for c1, c2 in zip(sorted(e1, key=lambda x: x.tag), sorted(e2, key=lambda x: x.tag)))
 
 
 class TestEntities(TestCase):
@@ -202,6 +209,8 @@ class TestStepActions(TestEntities):
             step1 = Step(self.lims, uri='http://testgenologics.com:4040/steps/s1')
             step2 = Step(self.lims, uri='http://testgenologics.com:4040/steps/s2')
             artifact = Artifact(self.lims, uri='http://testgenologics.com:4040/artifacts/a1')
+
+
             expected_next_actions = [{'artifact': artifact, 'action': 'requeue',
                                       'step': step1, 'rework-step': step2}]
             assert s.next_actions == expected_next_actions
@@ -219,7 +228,7 @@ class TestStepPlacements(TestEntities):
             a1 = Artifact(uri='http://testgenologics.com:4040/artifacts/a1', lims=self.lims)
             a2 = Artifact(uri='http://testgenologics.com:4040/artifacts/a2', lims=self.lims)
             c1 = Container(uri='http://testgenologics.com:4040/containers/c1', lims=self.lims)
-            expected_placements = [[a1, (c1, '1:1')], [a2, (c1, '2:1')]]
+            expected_placements = [(a1, (c1, '1:1')), (a2, (c1, '2:1'))]
             assert s.get_placement_list() == expected_placements
 
     def test_set_placements_list(self):
@@ -231,7 +240,7 @@ class TestStepPlacements(TestEntities):
         s = StepPlacements(uri=self.lims.get_uri('steps', 's1', 'placements'), lims=self.lims)
         with patch('requests.Session.get',
                    return_value=Mock(content=self.original_step_placements_xml, status_code=200)):
-            new_placements = [[a1, (c1, '3:1')], [a2, (c1, '4:1')]]
+            new_placements = [(a1, (c1, '3:1')), (a2, (c1, '4:1'))]
             s.placement_list = new_placements
             assert elements_equal(s.root, ElementTree.fromstring(self.modloc_step_placements_xml))
 
@@ -243,9 +252,66 @@ class TestStepPlacements(TestEntities):
         s = StepPlacements(uri=self.lims.get_uri('steps', 's1', 'placements'), lims=self.lims)
         with patch('requests.Session.get',
                    return_value=Mock(content=self.original_step_placements_xml, status_code=200)):
-            new_placements = [[a1, (c2, '1:1')], [a2, (c2, '1:1')]]
+            new_placements = [(a1, (c2, '1:1')), (a2, (c2, '1:1'))]
             s.placement_list = new_placements
             assert elements_equal(s.root, ElementTree.fromstring(self.modcont_step_placements_xml))
+
+
+class TestStep(TestEntities):
+    step_xml = generic_step.format(url=url, stepid='s1')
+    step_prog_status = generic_step_program_status.format(url=url, stepid='s1')
+
+    def test_create(self):
+        inputs = [
+            Mock(spec=Artifact, lims=self.lims, uri='http://testgenologics.com:4040/api/v2/artifacts/a1'),
+            Mock(spec=Artifact, lims=self.lims, uri='http://testgenologics.com:4040/api/v2/artifacts/a2')
+        ]
+        protocol_step = NamedMock(
+            spec=ProtocolStep,
+            real_name='My fancy step',
+            uri='http://testgenologics.com:4040/api/v2/configuration//protocols/p1/steps/p1s1',
+            permittedcontainers=['Tube']
+        )
+        with patch('pyclarity_lims.lims.requests.post',
+                   return_value=Mock(content=self.step_xml, status_code=201)) as patch_post:
+            Step.create(self.lims, protocol_step=protocol_step, inputs=inputs)
+            data = '''<?xml version='1.0' encoding='utf-8'?>
+            <stp:step-creation xmlns:stp="http://genologics.com/ri/step">
+                <configuration uri="http://testgenologics.com:4040/api/v2/configuration//protocols/p1/steps/p1s1">
+                    My fancy step
+                </configuration>
+                <container-type>Tube</container-type>
+                <inputs>
+                    <input uri="http://testgenologics.com:4040/api/v2/artifacts/a1" />
+                    <input uri="http://testgenologics.com:4040/api/v2/artifacts/a2" />
+                </inputs>
+            </stp:step-creation>
+            '''
+            assert elements_equal(ElementTree.fromstring(patch_post.call_args_list[0][1]['data']), ElementTree.fromstring(data))
+
+    def test_parse_entity(self):
+        with patch('requests.Session.get', return_value=Mock(content=self.step_xml, status_code=200)):
+            s = Step(self.lims, id='s1')
+            s.get()
+        assert [p[0] for p in s.available_programs] == ['program1', 'program2']
+        assert s.date_started == '2016-11-22T10:43:32.857+00:00'
+        assert s.date_completed == '2016-11-22T14:31:14.100+00:00'
+        assert s.current_state == 'Completed'
+        assert s.actions.uri == 'http://testgenologics.com:4040/api/v2/steps/s1/actions'
+        assert s.details.uri == 'http://testgenologics.com:4040/api/v2/steps/s1/details'
+        assert s.placements.uri == 'http://testgenologics.com:4040/api/v2/steps/s1/placements'
+        assert s.program_status.uri == 'http://testgenologics.com:4040/api/v2/steps/s1/programstatus'
+        assert s.program_names == ['program1', 'program2']
+
+    def test_trigger_program(self):
+        with patch('requests.Session.get', return_value=Mock(content=self.step_xml, status_code=200)):
+            s = Step(self.lims, id='s1')
+            s.get()
+        with patch('pyclarity_lims.lims.requests.post',
+                   return_value=Mock(content=self.step_prog_status, status_code=201)) as patch_post:
+            prog_status = s.trigger_program('program1')
+            assert prog_status.message == 'Traceback Error message'
+            assert prog_status.status == 'ERROR'
 
 
 class TestArtifacts(TestEntities):
@@ -329,7 +395,7 @@ class TestSample(TestEntities):
                 name='s1',
             )
             data = '''<?xml version=\'1.0\' encoding=\'utf-8\'?>
-            <smp:samplecreation xmlns:smp="http://pyclarity_lims.com/ri/sample">
+            <smp:samplecreation xmlns:smp="http://genologics.com/ri/sample">
             <name>s1</name>
             <project uri="project" />
             <location>

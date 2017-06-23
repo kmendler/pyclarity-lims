@@ -27,6 +27,7 @@ class XmlElement(object):
     def rootnode(self, instance):
         return instance.root
 
+
 class Nestable(XmlElement):
     "Abstract base XML parser allowing the descriptor to be nested."
     def __init__(self, nesting):
@@ -45,10 +46,12 @@ class Nestable(XmlElement):
             _rootnode = childnode
         return _rootnode
 
+
 class XmlMutable(XmlElement):
     """Class that receive an instance so it can be mutated in place"""
     def __init__(self, instance):
         self.instance = instance
+
 
 # Dictionary types
 class XmlDictionary(XmlMutable, dict):
@@ -226,6 +229,72 @@ class UdfDictionary(Nestable, XmlDictionary):
                 break
 
 
+class XmlElementAttributeDict(XmlDictionary, Nestable):
+    """
+    Dictionary of attributes for a specific xml element.
+    It will find all the elements with the specified tag and use the one in the provided position
+    then put all attributes of that tag in a dict.
+    The key is the attribute's name and value is the attribute's value.
+    """
+
+    def __init__(self, instance, tag, *args, **kwargs):
+        self.position = kwargs.pop('position', 0)
+        self.tag = tag
+        Nestable.__init__(self, nesting=kwargs.pop('nesting', []))
+        XmlDictionary.__init__(self, instance, *args, **kwargs)
+
+    def _update_elems(self):
+        # only one element here
+        # find all the tags
+        all_tags = self.rootnode(self.instance).findall(self.tag)
+        # only take the one at specified position
+        if len(all_tags) >  self.position:
+            self._elems = [all_tags[self.position]]
+        else:
+            self._elems = []
+
+    def _parse_element(self, element, **kwargs):
+        for k, v in element.attrib.items():
+            dict.__setitem__(self, k, v)
+
+    def _setitem(self, key, value):
+        self._elems[0].attrib[key] = value
+
+    def _delitem(self, key):
+        del self._elems[0].attrib[key]
+
+
+class XmlAction(XmlElementAttributeDict):
+    """
+    One Action of a list of action. The Action is store in an XmlElementAttributeDict with specific keys
+    artifact: The Artifact associated with this Action
+    step: The next step associated with this action
+    rework-step: The step associated with this action when the Artifact need to be requeued
+    """
+    def _parse_element(self, element, **kwargs):
+        from pyclarity_lims.entities import Artifact, Step
+        for k, v in element.attrib.items():
+            if k == 'artifact-uri':
+                k = 'artifact'
+                v = Artifact(self.instance.lims, uri=v)
+            elif k == 'step-uri':
+                k = 'step'
+                v = Step(self.instance.lims, uri=v)
+            elif k == 'rework-step-uri':
+                k = 'rework-step'
+                v = Step(self.instance.lims, uri=v)
+            dict.__setitem__(self, k, v)
+
+    def _setitem(self, key, value):
+        if key in ['artifact', 'step', 'rework-step']:
+            key = key + '-uri'
+            value = value.uri
+        self._elems[0].attrib[key] = value
+
+    def _delitem(self, key):
+        del self._elems[0].attrib[key]
+
+
 class PlacementDictionary(XmlDictionary):
     """Dictionary of placement in a Container.
     The key is the location such as "A:1"
@@ -258,7 +327,6 @@ class SubTagDictionary(XmlDictionary):
     """Dictionary of xml sub element where the key is the tag
     and the value is the text of the sub element.
     """
-
     def __init__(self, instance, tag, **kwargs):
         self.tag = tag
         XmlDictionary.__init__(self, instance)
@@ -300,8 +368,8 @@ class XmlList(XmlMutable, list):
         self._prepare_list()
 
     def _prepare_list(self):
-        for elem in self._elems:
-            self._parse_element(elem, lims=self.instance.lims)
+        for i, elem in enumerate(self._elems):
+            self._parse_element(elem, lims=self.instance.lims, position=i)
 
     def clear(self):
         # python 2.7 does not have a clear function for list
@@ -313,38 +381,52 @@ class XmlList(XmlMutable, list):
         for item in other_list:
             self._additem(item)
         self._update_elems()
-        return list.__add__(self, other_list)
+        return list.__add__(self, [self._modify_value_before_insert(v, len(self) + i) for i, v in enumerate(other_list)])
 
     def __iadd__(self, other_list):
         for item in other_list:
             self._additem(item)
         self._update_elems()
-        return list.__iadd__(self, other_list)
+        return list.__iadd__(self, [self._modify_value_before_insert(v) for i, v in enumerate(other_list)])
 
     def __setitem__(self, i, item):
         if isinstance(i, slice):
-            for k, v in zip(i, item):
+            new_items = []
+            slice_range = range(*i.indices(len(self)))
+            if len(slice_range) != len(item):
+                raise ValueError('Setting slice and list of different size is not supported %s != %s' % (len(slice_range), len(item)))
+            for k, v in zip(slice_range, item):
                 self._setitem(k, v)
-        else:
+                new_items.append(self._modify_value_before_insert(v, k))
+            item = new_items
+        elif isinstance(i, int):
             self._setitem(i, item)
+            item = self._modify_value_before_insert(item, i)
+        else:
+            raise TypeError('list indices must be integers or slices, not ' + type(i) )
         self._update_elems()
         return list.__setitem__(self, i, item)
 
     def insert(self, i, item):
         self._insertitem(i, item)
         self._update_elems()
-        return list.insert(self, i, item)
+        return_value = list.insert(self, i, self._modify_value_before_insert(item, i))
+        # Hack to make sure subsequent element get updated if the went trough _modify_value_before_insert
+        new_items = []
+        for p, v in enumerate(self[i + 1:]):
+            new_items.append(self._modify_value_before_insert(v, i + 1 + p))
+        list.__setitem__(self, slice(i + 1, len(self), 1), new_items)
 
     def append(self, item):
         self._additem(item)
         self._update_elems()
-        return list.append(self, item)
+        return list.append(self, self._modify_value_before_insert(item, len(self)))
 
     def extend(self, iterable):
         for v in iterable:
             self._additem(v)
         self._update_elems()
-        return list.extend(self, iterable)
+        return list.extend(self, [self._modify_value_before_insert(v, len(self) + i) for i, v in enumerate(iterable)])
 
     def _additem(self, value):
         node = self._create_new_node(value)
@@ -374,6 +456,11 @@ class XmlList(XmlMutable, list):
     def _create_new_node(self, value):
         raise NotImplementedError
 
+    def _modify_value_before_insert(self, value, position):
+        """function called for each value being inserted in the list.
+        Give subclass an opportunity to alter the data before insert"""
+        return value
+
 
 class TagXmlList(XmlList, Nestable):
     """Abstract class that creates elements of the list based on the provided tag."""
@@ -402,7 +489,7 @@ class XmlTextList(TagXmlList):
 class XmlAttributeList(TagXmlList):
     """This is a list of dict linked to an element's attributes.
     The list can only contain and be provided with dict.
-    Mutating the internal dicts won't modify the XML"""
+    The internal dicts are XmlElementAttributeDict which can be modified directly to modify the XML"""
 
     def _create_new_node(self, value):
         if not isinstance(value, dict):
@@ -412,17 +499,56 @@ class XmlAttributeList(TagXmlList):
             node.attrib[k] = v
         return node
 
-    def _parse_element(self, element, lims, **kwargs):
-        list.append(self, dict(element.attrib))
+    def _parse_element(self, element, lims, position, **kwargs):
+        d = XmlElementAttributeDict(self.instance, tag=self.tag, nesting=self.rootkeys, position=position)
+        list.append(self, d)
+
+    def _modify_value_before_insert(self, value, position):
+        """function called for each value being inserted in the list.
+        Give subclass an opportunity to alter the data before insert"""
+        return XmlElementAttributeDict(self.instance, tag=self.tag, nesting=self.rootkeys, position=position)
+
+
+class XmlActionList(TagXmlList):
+
+    def __init__(self, instance, *args, **kwargs):
+        TagXmlList.__init__(self, instance, tag='next-action', nesting=['next-actions'], *args, **kwargs)
+
+    def _create_new_node(self, value):
+        if not isinstance(value, dict):
+            raise TypeError('You need to provide a dict not ' + type(value))
+        node = ElementTree.Element(self.tag)
+        for k, v in value.items():
+            if k in ['artifact', 'step', 'rework-step']:
+                k = k + '-uri'
+                v = v.uri
+            node.attrib[k] = v
+        return node
+
+    def _parse_element(self, element, lims, position, **kwargs):
+        d = XmlAction(self.instance, tag=self.tag, nesting=self.rootkeys, position=position)
+        list.append(self, d)
+
+    def _modify_value_before_insert(self, value, position):
+        """function called for each value being inserted in the list.
+        Give subclass an opportunity to alter the data before insert"""
+        return XmlAction(self.instance, tag=self.tag, nesting=self.rootkeys, position=position)
+
 
 class XmlReagentLabelList(XmlAttributeList):
     """This is a list of reagent label."""
+
+    def __init__(self, instance, nesting=None, *args, **kwargs):
+        XmlAttributeList.__init__(self, instance, tag='reagent-label', nesting=nesting, *args, **kwargs)
 
     def _create_new_node(self, value):
         return XmlAttributeList._create_new_node(self, {'name': value})
 
     def _parse_element(self, element, lims, **kwargs):
         list.append(self, element.attrib['name'])
+
+    def _modify_value_before_insert(self, value, position):
+        return value
 
 
 class EntityList(TagXmlList):
@@ -441,6 +567,7 @@ class EntityList(TagXmlList):
 
     def _parse_element(self, element, lims, **kwargs):
         list.append(self, self.klass(lims, uri=element.attrib['uri']))
+
 
 class XmlInputOutputMapList(TagXmlList):
     """An instance attribute yielding a list of tuples (input, output)
@@ -475,6 +602,7 @@ class XmlInputOutputMapList(TagXmlList):
             result['parent-process'] = Process(lims, node.attrib['uri'])
         return result
 
+
 class OutputPlacementList(TagXmlList):
     """This is a list of output placement as found in the StepPlacement. The list contains tuples organise as follow:
     (A, (B, C)) where
@@ -487,8 +615,8 @@ class OutputPlacementList(TagXmlList):
         TagXmlList.__init__(self, instance, tag='output-placement', nesting=['output-placements'], *args, **kwargs)
 
     def _create_new_node(self, value):
-        if not isinstance(value, list):
-            raise TypeError('You need to provide a list not %s' % (type(value)))
+        if not isinstance(value, tuple):
+            raise TypeError('You need to provide a tuple not %s' % (type(value)))
         art, location = value
         container, position = location
         node = ElementTree.Element(self.tag)
@@ -509,7 +637,8 @@ class OutputPlacementList(TagXmlList):
                 Container(lims, uri=loc.find('container').attrib['uri']),
                 loc.find('value').text
             )
-        list.append(self, [input, location])
+        list.append(self, (input, location))
+
 
 class ExternalidList(XmlList):
 
@@ -535,6 +664,7 @@ class BaseDescriptor(XmlElement):
 
     def __get__(self, instance, cls):
         raise NotImplementedError
+
 
 class TagDescriptor(BaseDescriptor):
     """Abstract base descriptor for an instance attribute
@@ -624,7 +754,7 @@ class StringAttributeDescriptor(TagDescriptor):
 
 
 class EntityDescriptor(TagDescriptor):
-    "An instance attribute referencing another entity instance."
+    """An instance attribute referencing another entity instance."""
 
     def __init__(self, tag, klass):
         super(EntityDescriptor, self).__init__(tag)
@@ -697,6 +827,7 @@ class MutableDescriptor(BaseDescriptor):
             for k in value:
                 muttable[k] = value[k]
 
+
 class UdfDictionaryDescriptor(MutableDescriptor):
     """An instance attribute containing a dictionary of UDF values
     represented by multiple XML elements.
@@ -711,7 +842,7 @@ class UdtDictionaryDescriptor(MutableDescriptor):
     """
 
     def __init__(self, **kwargs):
-        MutableDescriptor.__init__(self, UdfDictionary, udt=False, **kwargs)
+        MutableDescriptor.__init__(self, UdfDictionary, udt=True, **kwargs)
 
 
 class PlacementDictionaryDescriptor(MutableDescriptor):
@@ -719,8 +850,8 @@ class PlacementDictionaryDescriptor(MutableDescriptor):
     keys and artifact values represented by multiple XML elements.
     """
 
-    def __init__(self, tag, **kwargs):
-        MutableDescriptor.__init__(self, PlacementDictionary, tag=tag, **kwargs)
+    def __init__(self, **kwargs):
+        MutableDescriptor.__init__(self, PlacementDictionary, **kwargs)
 
 
 class EntityListDescriptor(MutableDescriptor):
@@ -755,6 +886,7 @@ class AttributeListDescriptor(MutableDescriptor):
     def __init__(self, tag, **kwargs):
         MutableDescriptor.__init__(self, XmlAttributeList, tag=tag, **kwargs)
 
+
 class StringDictionaryDescriptor(MutableDescriptor):
     """An instance attribute containing a dictionary of string key/values
     represented by a hierarchical XML element.
@@ -773,6 +905,7 @@ class InputOutputMapList(MutableDescriptor):
     def __init__(self, **kwargs):
         MutableDescriptor.__init__(self, XmlInputOutputMapList, **kwargs)
 
+
 class OutputPlacementListDescriptor(MutableDescriptor):
     """An instance attribute yielding a list of tuples (A, (B, C)) where:
      A is an artifact
@@ -781,6 +914,7 @@ class OutputPlacementListDescriptor(MutableDescriptor):
 
     def __init__(self, **kwargs):
         MutableDescriptor.__init__(self, OutputPlacementList, **kwargs)
+
 
 class ExternalidListDescriptor(MutableDescriptor):
     """An instance attribute yielding a list of tuples (id, uri) for
