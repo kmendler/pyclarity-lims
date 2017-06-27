@@ -63,7 +63,7 @@ In the code above
         # accessing the name of the sample triggers the query
 
 To avoid sending to many queries all Entities that have been retrieved are also cached which means that once the Entity is retrieved it won't be queried unless forced.
-This make pyclarity_lims more efficient but very well suited for long running process during which the state of the LIMS is likely to change.
+This make pyclarity_lims more efficient but also not very well suited for long running process during which the state of the LIMS is likely to change.
 You can bypass the cache as shown in :ref:`up-to-date-program-status`.
 
 Looking beyond
