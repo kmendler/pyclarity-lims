@@ -261,7 +261,8 @@ class Sample(Entity):
     """List of files associated with the sample."""
     externalids = ExternalidListDescriptor()
     """list of external identifiers associated with the sample"""
-    # biosource XXX
+    artifact = None # See bottom of the file
+    """Initial :py:class:`Artifact <pyclarity_lims.entities.Artifact>` associated with the sample."""
 
 
     @classmethod
@@ -433,7 +434,7 @@ class Process(Entity):
         return outs
 
     def input_per_sample(self, sample):
-        """getting all the input artifacts dereved from the specified sample
+        """Getting all the input artifacts dereved from the specified sample
 
         :param sample: the sample name to check against
 
@@ -474,6 +475,7 @@ class Process(Entity):
     def all_outputs(self, unique=True, resolve=False):
         """Retrieving all output artifacts from input_output_maps
         if unique is true, no duplicates are returned.
+
         :param unique: boolean specifying if the list of artifact should be uniqued
         :param resolve: boolean specifying if the artifacts entities should be resolved through a batch query.
         :return: list of output artifact.
@@ -562,6 +564,8 @@ class Artifact(Entity):
     """List of :py:class:`files <pyclarity_lims.entities.File>` associated with the artifact."""
     reagent_labels = ReagentLabelList()
     """List of :py:class:`Reagent label <pyclarity_lims.entities.Reagent_label>` associated with the artifact."""
+    workflow_stages = None # See bottom of the file
+    """List of workflow stages :py:class:`Step <pyclarity_lims.entities.Step>` that this artifact ran through."""
 
     # artifact_flags XXX
     # artifact_groups XXX
@@ -616,7 +620,12 @@ class Artifact(Entity):
         return result
 
     workflow_stages_and_statuses = property(_get_workflow_stages_and_statuses)
+    """List of tuple containing three elements (A, B, C) where:
 
+        - A is a :py:class:`Step <pyclarity_lims.entities.Step>` this artifact has run through.
+        - B is the status of said Step.
+        - C the name of the Step.
+    """
 
 class StepPlacements(Entity):
     """Placements from within a step. Supports POST"""
@@ -653,6 +662,8 @@ class StepActions(Entity):
       - artifact: The :py:class:`artifact <pyclarity_lims.entities.Artifact>` associated with this Action
       - step: The next :py:class:`step <pyclarity_lims.entities.Step>` associated with this action
       - rework-step: The :py:class:`step <pyclarity_lims.entities.Step>` associated with this action when the Artifact need to be requeued"""
+    step = None # See bottom of the file
+    """:py:class:`Step <pyclarity_lims.entities.Step>` associated with the actions."""
 
     @property
     def escalation(self):
@@ -786,6 +797,8 @@ class Step(Entity):
     date_completed = StringDescriptor('date-completed')
     """The date at which the step completed in format Year-Month-DayTHour:Min:Sec i.e. 2016-11-22T10:43:32.857+00:00"""
     _available_programs = None
+    configuration = None
+    """:py:class:`Step configuration<pyclarity_lims.entities.ProtocolStep>` associated with the step."""
 
     def advance(self):
         """
@@ -953,6 +966,8 @@ class Stage(Entity):
     """:py:class:`Protocol <pyclarity_lims.entities.Protocol>` associated with this stage."""
     step = EntityDescriptor('step', ProtocolStep)
     """:py:class:`Step <pyclarity_lims.entities.ProtocolStep>` associated with this stage."""
+    workflow = None # See bottom of the file
+    """:py:class:`Workflow <pyclarity_lims.entities.Workflow>` associated with the stage."""
 
 
 class Workflow(Entity):
@@ -1001,12 +1016,7 @@ class Queue(Entity):
     """List of :py:class:`artifacts <pyclarity_lims.entities.Artifact>` associated with this workflow."""
 
 Sample.artifact = EntityDescriptor('artifact', Artifact)
-"""Initial :py:class:`Artifact <pyclarity_lims.entities.Artifact>` associated with the sample."""
 StepActions.step = EntityDescriptor('step', Step)
-""":py:class:`Step <pyclarity_lims.entities.Step>` associated with the actions."""
 Stage.workflow = EntityDescriptor('workflow', Workflow)
-""":py:class:`Workflow <pyclarity_lims.entities.Workflow>` associated with the stage."""
 Artifact.workflow_stages = EntityListDescriptor(tag='workflow-stage', klass=Stage, nesting=['workflow-stages'])
-"""List of workflow stages :py:class:`Step <pyclarity_lims.entities.Step>` that this artifact ran through."""
 Step.configuration = EntityDescriptor('configuration', ProtocolStep)
-""":py:class:`Step configuration<pyclarity_lims.entities.ProtocolStep>` associated with the step."""
