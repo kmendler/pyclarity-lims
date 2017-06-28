@@ -1,10 +1,3 @@
-"""Python interface to GenoLogics LIMS via its REST API.
-
-Entities and their descriptors for the LIMS interface.
-
-Per Kraulis, Science for Life Laboratory, Stockholm, Sweden.
-Copyright (C) 2012 Per Kraulis
-"""
 from pyclarity_lims.constants import nsmap
 from pyclarity_lims.descriptors import StringDescriptor, UdfDictionaryDescriptor, \
     UdtDictionaryDescriptor, ExternalidListDescriptor, EntityDescriptor, BooleanDescriptor, \
