@@ -1,7 +1,7 @@
 Changelog for Pyclarity-Lims
 ============================
 
-0.4 (unreleased)
+0.4 (2017-07-05)
 ----------------
  - forked genologics repo and rename to pyclarity_lims
  - Add ability to create Step instance from queued artifact to start a new process
