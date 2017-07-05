@@ -10,5 +10,7 @@ docs/_sources/
 docs/.doctrees/
 docs/_templates/
 docs/*.html
-
-
+.idea/
+genologics/__pycache__/
+pyclarity_lims/__pycache__/
+tests/__pycache__/

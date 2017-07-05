@@ -907,10 +907,12 @@ class InputOutputMapList(MutableDescriptor):
 
 
 class OutputPlacementListDescriptor(MutableDescriptor):
-    """An instance attribute yielding a list of tuples (A, (B, C)) where:
-     A is an artifact
-     B is a container
-     C is a string specifying the location such as "1:1"    """
+    """
+    An instance attribute yielding a list of tuples (A, (B, C)) where:
+    A is an artifact
+    B is a container
+    C is a string specifying the location such as "1:1"
+    """
 
     def __init__(self, **kwargs):
         MutableDescriptor.__init__(self, OutputPlacementList, **kwargs)
