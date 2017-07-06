@@ -9,3 +9,7 @@ recursive-include tests *.log
 recursive-include tests *.py
 recursive-include tests *.sh
 recursive-include tests *.txt
+include LICENSE
+recursive-include docs *.py
+recursive-include docs *.rst
+recursive-include docs Makefile
