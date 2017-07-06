@@ -1,6 +1,12 @@
 Changelog for Pyclarity-Lims
 ============================
 
+0.5 (unreleased)
+----------------
+
+- Nothing changed yet.
+
+
 0.4 (2017-07-06)
 ----------------
  - forked genologics repo and rename to pyclarity_lims
