@@ -9,16 +9,16 @@ This example assume you have a :py:class:`Lims <pyclarity_lims.lims.Lims>` and a
 
 .. code::
 
-        # Create a process entity
+        # Create a process entity from an existing process in the LIMS
         p = Process(l, id=process_id)
-        # Create all the input artifacts and iterate over them
+        # Retreive  each input artifacts and iterate over them
         for artifact in p.all_inputs():
             # change the value of the udf
             artifact.udf['udfname'] = 'udfvalue'
             # upload the artifact back to the Lims
             artifact.put()
 
-In some cases the  we want to optimise the number of query and make use of the batched query the API offers.
+In some cases we want to optimise the number of query sent to the LIMS and make use of the batched query the API offers.
 
 .. code::
 
@@ -29,6 +29,11 @@ In some cases the  we want to optimise the number of query and make use of the b
             artifact.udf['udfname'] = 'udfvalue'
         # Upload all the artifacts in one batch query
         l.batch_put(p.all_inputs())
+
+.. note::
+
+        the batch queries are ususally faster than the equivalent multiple individual queries.
+        However the gain seems very variable and is not as high as one might expect.
 
 Find all the samples that went through a Step with a specific udf value
 -----------------------------------------------------------------------
@@ -48,16 +53,17 @@ This is a typical search that is performed when searching for sample that went t
 Make sure to have the up-to-date program status
 -----------------------------------------------
 
-Because all the entities are cached, sometime the information get out of date especially when it is changing rapidly: like the status of a running program.
+Because all the entities are cached, sometime the Entities get out of date especially
+when the data in the LIMS  is changing rapidly: like the status of a running program.
 
 .. code::
 
         s = Step(l, id=step_id)
-        s.program_status.status  # return RUNNING
+        s.program_status.status  # returns RUNNING
         sleep(10)
-        s.program_status.status  # return RUNNING because it is still cached
+        s.program_status.status  # returns RUNNING because it is still cached
         s.program_status.get(force=True)
-        s.program_status.status  # return COMPLETE
+        s.program_status.status  # returns COMPLETE
 
 The function :py:func:`get <pyclarity_lims.entities.Entity.get>` is most of the time used implicitly
 but can be used explicitly with the force option to bypass the cache and retrieve an up-to-date version of the instance.
@@ -66,14 +72,15 @@ Create sample with a Specific udfs
 ----------------------------------
 
 So far we always retrieve entities from the LIMS and in some case modified them before uploading them back.
-We can also create some of these entities and upload them to the LIMS. Here is how to create a sample.
+We can also create some of these entities and upload them to the LIMS.
+Here is how to create a sample with a specific udf.
 
 .. code::
 
         Sample.create(l, container=c, position='H:3', project=p, name='sampletest', udf={'testudf':'testudf_value'})
 
 
-Start a new Step from submitted samples
+Start and complete a new Step from submitted samples
 ---------------------------------------
 
 Creating a step, filling in the placement and the next actions then completing the step
