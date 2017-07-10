@@ -97,7 +97,7 @@ class Lims(object):
             url += '?' + urlencode(query)
         return url
 
-    def get(self, uri, params=dict()):
+    def get(self, uri, params=None):
         """
         GET data from the URI. It checks the status and return the text of response as an ElementTree.
 
@@ -115,7 +115,7 @@ class Lims(object):
         else:
             return self.parse_response(r)
 
-    def put(self, uri, data, params=dict()):
+    def put(self, uri, data, params=None):
         """PUT the serialized XML to the given URI.
         Return the response XML as an ElementTree.
         """
@@ -124,7 +124,7 @@ class Lims(object):
                                   'accept': 'application/xml'})
         return self.parse_response(r)
 
-    def post(self, uri, data, params=dict()):
+    def post(self, uri, data, params=None):
         """POST the serialized XML to the given URI.
         Return the response XML as an ElementTree.
         """
@@ -132,18 +132,19 @@ class Lims(object):
                       headers={'content-type': 'application/xml', 'accept': 'application/xml'})
         return self.parse_response(r, accept_status_codes=[200, 201, 202])
 
-    def validate_response(self, response, accept_status_codes=[200]):
+    def validate_response(self, response, accept_status_codes=None):
         """Parse the XML returned in the response.
         Raise an HTTP error if the response status is not one of the
         specified accepted status codes.
         """
+        accept_status_codes = accept_status_codes or [200]
         if response.status_code not in accept_status_codes:
             try:
                 root = ElementTree.fromstring(response.content)
                 node = root.find('message')
                 if node is None:
                     response.raise_for_status()
-                    message = "%s" % (response.status_code)
+                    message = "%s" % response.status_code
                 else:
                     message = "%s: %s" % (response.status_code, node.text)
                 node = root.find('suggested-actions')
@@ -154,9 +155,9 @@ class Lims(object):
             raise requests.exceptions.HTTPError(message)
         return True
 
-    def parse_response(self, response, accept_status_codes=[200]):
+    def parse_response(self, response, accept_status_codes=None):
         """Parse the XML returned in the response.
-        Raise an HTTP error if the response status is not 200.
+        Raise an HTTP error if the response status is not in the accept_status_codes.
         """
         self.validate_response(response, accept_status_codes)
         root = ElementTree.fromstring(response.content)
@@ -171,7 +172,8 @@ class Lims(object):
         tag = nsmap('ver:versions')
         assert tag == root.tag
         for node in root.findall('version'):
-            if node.attrib['major'] == self.VERSION: return
+            if node.attrib['major'] == self.VERSION:
+                return
         raise ValueError('version mismatch')
 
     def _get_params(self, **kwargs):
@@ -182,18 +184,25 @@ class Lims(object):
             result[key.replace('_', '-')] = value
         return result
 
-    def _get_params_udf(self, udf=dict(), udtname=None, udt=dict()):
-        "Convert UDF-ish arguments to a params dictionary."
+    def _get_params_udf(self, udf=None, udtname=None, udt=None):
+        """
+        Convert UDF-ish arguments to a params dictionary.
+        :param udf: Dictionary of udf with udf name as key and value as dictionary values.
+        :param udtname: Name of the udt.
+        :param udf: Dictionary of udt with udt name as key and value as dictionary values.
+        """
         result = dict()
-        for key, value in udf.items():
-            result["udf.%s" % key] = value
+        if udf:
+            for key, value in udf.items():
+                result["udf.%s" % key] = value
         if udtname is not None:
             result['udt.name'] = udtname
-        for key, value in udt.items():
-            result["udt.%s" % key] = value
+        if udt:
+            for key, value in udt.items():
+                result["udt.%s" % key] = value
         return result
 
-    def _get_instances(self, klass, add_info=None, params=dict()):
+    def _get_instances(self, klass, add_info=None, params=None):
         results = []
         additionnal_info_dicts = []
         tag = klass._TAG
@@ -297,7 +306,7 @@ class Lims(object):
         return self._get_instances(ReagentType, params=params)
 
     def get_labs(self, name=None, last_modified=None,
-                 udf=dict(), udtname=None, udt=dict(), start_index=None, add_info=False):
+                 udf=None, udtname=None, udt=None, start_index=None, add_info=False):
         """Get a list of labs, filtered by keyword arguments.
 
         :param name: Lab name, or list of names.
@@ -319,7 +328,7 @@ class Lims(object):
 
     def get_researchers(self, firstname=None, lastname=None, username=None,
                         last_modified=None,
-                        udf=dict(), udtname=None, udt=dict(), start_index=None,
+                        udf=None, udtname=None, udt=None, start_index=None,
                         add_info=False):
         """Get a list of researchers, filtered by keyword arguments.
 
@@ -345,7 +354,7 @@ class Lims(object):
         return self._get_instances(Researcher, add_info=add_info, params=params)
 
     def get_projects(self, name=None, open_date=None, last_modified=None,
-                     udf=dict(), udtname=None, udt=dict(), start_index=None,
+                     udf=None, udtname=None, udt=None, start_index=None,
                      add_info=False):
         """Get a list of projects, filtered by keyword arguments.
 
@@ -369,7 +378,7 @@ class Lims(object):
         return self._get_instances(Project, add_info=add_info, params=params)
 
     def get_sample_number(self, name=None, projectname=None, projectlimsid=None,
-                          udf=dict(), udtname=None, udt=dict(), start_index=None):
+                          udf=None, udtname=None, udt=None, start_index=None):
         """
         Gets the number of samples matching the query without fetching every
         sample, so it should be faster than len(get_samples())
@@ -389,7 +398,7 @@ class Lims(object):
         return total
 
     def get_samples(self, name=None, projectname=None, projectlimsid=None,
-                    udf=dict(), udtname=None, udt=dict(), start_index=None):
+                    udf=None, udtname=None, udt=None, start_index=None):
         """Get a list of samples, filtered by keyword arguments.
 
         :param name: Sample name, or list of names.
@@ -413,7 +422,7 @@ class Lims(object):
                       artifact_flag_name=None, working_flag=None, qc_flag=None,
                       sample_name=None, samplelimsid=None, artifactgroup=None, containername=None,
                       containerlimsid=None, reagent_label=None,
-                      udf=dict(), udtname=None, udt=dict(), start_index=None,
+                      udf=None, udtname=None, udt=None, start_index=None,
                       resolve=False):
         """Get a list of artifacts, filtered by keyword arguments.
 
@@ -458,7 +467,7 @@ class Lims(object):
 
     def get_containers(self, name=None, type=None,
                        state=None, last_modified=None,
-                       udf=dict(), udtname=None, udt=dict(), start_index=None,
+                       udf=None, udtname=None, udt=None, start_index=None,
                        add_info=False):
         """Get a list of containers, filtered by keyword arguments.
 
@@ -498,7 +507,7 @@ class Lims(object):
     def get_processes(self, last_modified=None, type=None,
                       inputartifactlimsid=None,
                       techfirstname=None, techlastname=None, projectname=None,
-                      udf=dict(), udtname=None, udt=dict(), start_index=None):
+                      udf=None, udtname=None, udt=None, start_index=None):
         """Get a list of processes, filtered by keyword arguments.
 
         :param last_modified: Since the given ISO format datetime.
