@@ -875,7 +875,7 @@ class Step(Entity):
         self.placement.root = self.placement.post()
 
     @classmethod
-    def create(cls, lims, protocol_step, inputs, container_type_name=None, reagent_category=None, **kwargs):
+    def create(cls, lims, protocol_step, inputs, container_type_name=None, reagent_category=None, replicates=None, **kwargs):
         """
         Create a new instance of a Step. This method will start a step from queued artifacts.
 
@@ -885,6 +885,7 @@ class Step(Entity):
         :param container_type_name: optional name of the type of container that this step use for its output.
                                     if omitted it uses the required type from the ProtocolStep if there is only one.
         :param reagent_category: optional reagent_category.
+        :param replicates: int or list of int specifying the number of replicates for each inputs.
         """
         instance = super(Step, cls)._create(lims, **kwargs)
         # Check configuratio of the step
@@ -910,12 +911,16 @@ class Step(Entity):
             reagent_category_node = ElementTree.SubElement(instance.root, 'reagent_category')
             reagent_category_node.text = reagent_category
 
+        if isinstance(replicates, int):
+            replicates = [replicates] * len(inputs)
         inputs_node = ElementTree.SubElement(instance.root, 'inputs')
-        for artifact in inputs:
+        for i, artifact in enumerate(inputs):
             if not isinstance(artifact, Artifact):
                 raise TypeError('Input must be of type Artifact not %s.' % type(artifact))
             input_node = ElementTree.SubElement(inputs_node, 'input')
             input_node.attrib['uri'] = artifact.uri
+            if replicates:
+                input_node.attrib['replicates'] = str(replicates[i])
         data = lims.tostring(ElementTree.ElementTree(instance.root))
         instance.root = lims.post(uri=lims.get_uri(cls._URI), data=data)
         instance._uri = instance.root.attrib['uri']
