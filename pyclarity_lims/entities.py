@@ -851,6 +851,7 @@ class Step(Entity):
         self.program_status.root = e
         return self.program_status
 
+    @property
     def process(self):
         """Retrieve the Process corresponding to this Step. They share the same id"""
         return Process(self.lims, id=self.id)
