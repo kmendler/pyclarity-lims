@@ -64,7 +64,7 @@ class TestLims(TestCase):
         assert mocked_instance.call_count == 1
         mocked_instance.assert_called_with(
             'GET', 'http://testgenologics.com:4040/api/v2/artifacts?sample_name=test_sample',
-            headers={'accept': 'application/xml'}, params={}
+            headers={'accept': 'application/xml'}, params=None
         )
 
     def test_put(self):
