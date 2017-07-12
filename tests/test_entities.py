@@ -274,6 +274,35 @@ class TestStep(TestEntities):
         )
         with patch('pyclarity_lims.lims.requests.post',
                    return_value=Mock(content=self.step_xml, status_code=201)) as patch_post:
+            Step.create(self.lims, protocol_step=protocol_step, inputs=inputs, replicates=[1, 2])
+            data = '''<?xml version='1.0' encoding='utf-8'?>
+            <stp:step-creation xmlns:stp="http://genologics.com/ri/step">
+                <configuration uri="http://testgenologics.com:4040/api/v2/configuration//protocols/p1/steps/p1s1">
+                    My fancy step
+                </configuration>
+                <container-type>Tube</container-type>
+                <inputs>
+                    <input uri="http://testgenologics.com:4040/api/v2/artifacts/a1" replicates="1"/>
+                    <input uri="http://testgenologics.com:4040/api/v2/artifacts/a2" replicates="2"/>
+                </inputs>
+            </stp:step-creation>
+            '''
+            assert elements_equal(ElementTree.fromstring(patch_post.call_args_list[0][1]['data']), ElementTree.fromstring(data))
+
+    def test_create2(self):
+        inputs = [
+            Mock(spec=Artifact, lims=self.lims, uri='http://testgenologics.com:4040/api/v2/artifacts/a1'),
+            Mock(spec=Artifact, lims=self.lims, uri='http://testgenologics.com:4040/api/v2/artifacts/a2')
+        ]
+        protocol_step = NamedMock(
+            spec=ProtocolStep,
+            real_name='My fancy step',
+            uri='http://testgenologics.com:4040/api/v2/configuration//protocols/p1/steps/p1s1',
+            permittedcontainers=['Tube']
+        )
+        with patch('pyclarity_lims.lims.requests.post',
+                   return_value=Mock(content=self.step_xml, status_code=201)) as patch_post:
+            # replicates default to 1
             Step.create(self.lims, protocol_step=protocol_step, inputs=inputs)
             data = '''<?xml version='1.0' encoding='utf-8'?>
             <stp:step-creation xmlns:stp="http://genologics.com/ri/step">
@@ -282,12 +311,13 @@ class TestStep(TestEntities):
                 </configuration>
                 <container-type>Tube</container-type>
                 <inputs>
-                    <input uri="http://testgenologics.com:4040/api/v2/artifacts/a1" />
-                    <input uri="http://testgenologics.com:4040/api/v2/artifacts/a2" />
+                    <input uri="http://testgenologics.com:4040/api/v2/artifacts/a1" replicates="1"/>
+                    <input uri="http://testgenologics.com:4040/api/v2/artifacts/a2" replicates="1"/>
                 </inputs>
             </stp:step-creation>
             '''
             assert elements_equal(ElementTree.fromstring(patch_post.call_args_list[0][1]['data']), ElementTree.fromstring(data))
+
 
     def test_parse_entity(self):
         with patch('requests.Session.get', return_value=Mock(content=self.step_xml, status_code=200)):
@@ -404,5 +434,3 @@ class TestSample(TestEntities):
             </location>
             </smp:samplecreation>'''
             assert elements_equal(ElementTree.fromstring(patch_post.call_args_list[0][1]['data']), ElementTree.fromstring(data))
-
-

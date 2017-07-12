@@ -4,7 +4,7 @@ Changelog for Pyclarity-Lims
 0.5 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Add ability to create step with replicates (multiple output artifacts)
 
 
 0.4 (2017-07-06)
