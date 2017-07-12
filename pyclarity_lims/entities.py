@@ -875,7 +875,7 @@ class Step(Entity):
         self.placement.root = self.placement.post()
 
     @classmethod
-    def create(cls, lims, protocol_step, inputs, container_type_name=None, reagent_category=None, replicates=None, **kwargs):
+    def create(cls, lims, protocol_step, inputs, container_type_name=None, reagent_category=None, replicates=1, **kwargs):
         """
         Create a new instance of a Step. This method will start a step from queued artifacts.
 
@@ -913,6 +913,7 @@ class Step(Entity):
 
         if isinstance(replicates, int):
             replicates = [replicates] * len(inputs)
+        assert len(replicates) == len(inputs)
         inputs_node = ElementTree.SubElement(instance.root, 'inputs')
         for i, artifact in enumerate(inputs):
             if not isinstance(artifact, Artifact):

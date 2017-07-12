@@ -302,7 +302,8 @@ class TestStep(TestEntities):
         )
         with patch('pyclarity_lims.lims.requests.post',
                    return_value=Mock(content=self.step_xml, status_code=201)) as patch_post:
-            Step.create(self.lims, protocol_step=protocol_step, inputs=inputs, replicates=1)
+            # replicates default to 1
+            Step.create(self.lims, protocol_step=protocol_step, inputs=inputs)
             data = '''<?xml version='1.0' encoding='utf-8'?>
             <stp:step-creation xmlns:stp="http://genologics.com/ri/step">
                 <configuration uri="http://testgenologics.com:4040/api/v2/configuration//protocols/p1/steps/p1s1">
