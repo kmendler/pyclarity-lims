@@ -9,7 +9,7 @@ from pyclarity_lims.constants import nsmap
 from pyclarity_lims.descriptors import StringDescriptor, StringAttributeDescriptor, StringListDescriptor, \
     StringDictionaryDescriptor, IntegerDescriptor, BooleanDescriptor, UdfDictionary, EntityDescriptor, \
     InputOutputMapList, EntityListDescriptor, PlacementDictionary, EntityList, SubTagDictionary, ExternalidList,\
-    XmlElementAttributeDict, XmlAttributeList, XmlReagentLabelList
+    XmlElementAttributeDict, XmlAttributeList, XmlReagentLabelList, XmlPooledInputDict
 from pyclarity_lims.entities import Artifact
 from pyclarity_lims.lims import Lims
 from tests import  elements_equal
@@ -20,14 +20,16 @@ else:
     from unittest.mock import Mock
 
 
+def _tostring(e):
+    outfile = BytesIO()
+    ElementTree.ElementTree(e).write(outfile, encoding='utf-8', xml_declaration=True)
+    return outfile.getvalue().decode("utf-8")
+
+
 class TestDescriptor(TestCase):
     def _make_desc(self, klass, *args, **kwargs):
         return klass(*args, **kwargs)
 
-    def _tostring(self, e):
-        outfile = BytesIO()
-        ElementTree.ElementTree(e).write(outfile, encoding='utf-8', xml_declaration=True)
-        return outfile.getvalue()
 
 class TestStringDescriptor(TestDescriptor):
     def setUp(self):
@@ -385,9 +387,27 @@ class TestPlacementDictionary(TestCase):
     def test___setitem__(self):
         assert len(self.dict1.rootnode(self.dict1.instance).findall('placement')) == 1
         art2 = Artifact(lims=self.lims, id='a2')
+        self.dict1['A:1'] = art2
+        assert len(self.dict1.rootnode(self.dict1.instance).findall('placement')) == 1
+
         self.dict1['A:2'] = art2
         assert len(self.dict1.rootnode(self.dict1.instance).findall('placement')) == 2
         assert self.dict1['A:2'] == art2
+
+    def test___setitem__2(self):
+        et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <test-entry xmlns:udf="http://genologics.com/ri/userdefined">
+        </test-entry>""")
+        instance = Mock(root=et, lims=self.lims)
+        dict = PlacementDictionary(instance)
+        assert len(dict.rootnode(dict.instance).findall('placement')) == 0
+        dict['A:1'] = self.art1
+        assert len(dict.rootnode(dict.instance).findall('placement')) == 1
+
+    def test___delitem__(self):
+        assert len(self.dict1.rootnode(self.dict1.instance).findall('placement')) == 1
+        del self.dict1['A:1']
+        assert len(self.dict1.rootnode(self.dict1.instance).findall('placement')) == 0
 
 
 class TestSubTagDictionary(TestCase):
@@ -408,9 +428,13 @@ class TestSubTagDictionary(TestCase):
 
     def test___setitem__(self):
         assert len(self.dict1.rootnode(self.dict1.instance).find('test-tag')) == 1
-        art2 = Artifact(lims=self.lims, id='a2')
+        assert self.dict1.rootnode(self.dict1.instance).find('test-tag').find('key1').text == 'value1'
+        self.dict1['key1'] = 'value11'
+        assert len(self.dict1.rootnode(self.dict1.instance).find('test-tag')) == 1
+        assert self.dict1.rootnode(self.dict1.instance).find('test-tag').find('key1').text == 'value11'
         self.dict1['key2'] = 'value2'
         assert len(self.dict1.rootnode(self.dict1.instance).find('test-tag')) == 2
+        assert self.dict1.rootnode(self.dict1.instance).find('test-tag').find('key2').text == 'value2'
         assert self.dict1['key2'] == 'value2'
 
 
@@ -440,6 +464,41 @@ class TestXmlElementAttributeDict(TestCase):
         self.dict1['attrib1'] = 'value2'
         assert self.dict1.rootnode(self.dict1.instance).findall('test-tag')[0].attrib['attrib1'] == 'value2'
 
+
+class TestXmlPooledInputDict(TestCase):
+
+    def setUp(self):
+        et = ElementTree.fromstring('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <test-entry>
+        <pooled-inputs>
+        <pool output-uri="{uri}/out1" name="pool1">
+        <input uri="{uri}/in1"/>
+        <input uri="{uri}/in2"/>
+        </pool>
+        <pool output-uri="{uri}/out2" name="pool2">
+        <input uri="{uri}/in3"/>
+        <input uri="{uri}/in4"/>
+        </pool>
+        </pooled-inputs>
+        </test-entry>'''.format(uri='http://testgenologics.com:4040'))
+
+        self.lims = Lims('http://testgenologics.com:4040', username='test', password='password')
+        self.instance1 = Mock(root=et, lims=self.lims)
+        self.dict1 = XmlPooledInputDict(self.instance1)
+
+        self.out1 = Artifact(self.lims, uri='http://testgenologics.com:4040/out1')
+        self.in1 = Artifact(self.lims, uri='http://testgenologics.com:4040/in1')
+        self.in2 = Artifact(self.lims, uri='http://testgenologics.com:4040/in2')
+
+    def test___getitem__(self):
+        assert self.dict1['pool1'] == (self.out1, (self.in1, self.in2))
+
+    def test___setitem__(self):
+        assert len(self.dict1) == 2
+        assert len(self.dict1.rootnode(self.dict1.instance)) == 2
+        self.dict1['pool3'] = (self.out1, (self.in1, self.in2))
+        assert len(self.dict1) == 3
+        assert len(self.dict1.rootnode(self.dict1.instance)) == 3
 
 class TestEntityList(TestCase):
 
