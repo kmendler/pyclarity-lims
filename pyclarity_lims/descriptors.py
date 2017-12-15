@@ -284,7 +284,9 @@ class XmlAction(XmlElementAttributeDict):
             dict.__setitem__(self, k, v)
 
     def _setitem(self, key, value):
-        if key in ['artifact', 'step', 'rework-step']:
+        from pyclarity_lims.entities import Artifact, ProtocolStep
+        if (key in ['artifact'] and isinstance(value, Artifact)) or \
+           (key in ['step', 'rework-step'] and isinstance(value, ProtocolStep)):
             key += '-uri'
             value = value.uri
         elif key in ['action']:
