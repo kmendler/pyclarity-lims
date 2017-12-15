@@ -270,6 +270,7 @@ class XmlAction(XmlElementAttributeDict):
     artifact: The Artifact associated with this Action
     step: The next step associated with this action
     rework-step: The step associated with this action when the Artifact need to be requeued
+    action: The type of action to perform. (leave, repeat, remove, review, complete, store, nextstep, rework, completerepeat, unknown)
     """
     def _parse_element(self, element, **kwargs):
         from pyclarity_lims.entities import Artifact, ProtocolStep

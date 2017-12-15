@@ -655,19 +655,32 @@ class StepPlacements(Entity):
 
 
 class StepActions(Entity):
-    """Actions associated with a step"""
+    """Actions associated with the end of the step"""
     _escalation = None
     next_actions = MutableDescriptor(XmlActionList)
     """
     List of dict that representing an action for an artifact. They keys of the dict are:
       - artifact: The :py:class:`artifact <pyclarity_lims.entities.Artifact>` associated with this Action
       - step: The next :py:class:`step <pyclarity_lims.entities.Step>` associated with this action
-      - rework-step: The :py:class:`step <pyclarity_lims.entities.Step>` associated with this action when the Artifact need to be requeued"""
+      - rework-step: The :py:class:`step <pyclarity_lims.entities.Step>` associated with this action when the Artifact need to be requeued
+      - action: The type of action to perform.
+        - leave: Leave the sample in the QC protocol.
+        - repeat: Repeat this step.
+        - remove: Remove from workflow.
+        - review: Request manager review.
+        - complete: Mark protocol as complete.
+        - store: Store for later.
+        - nextstep: Continue to the next step.
+        - rework: Rework from an earlier step.
+        - completerepeat: Complete and Repeat
+        - unknown: The action is unknown.
+        """
     step = None # See bottom of the file
     """:py:class:`Step <pyclarity_lims.entities.Step>` associated with the actions."""
 
     @property
     def escalation(self):
+        # TODO: Convert to using descriptor and document
         if not self._escalation:
             self.get()
             self._escalation = {}
