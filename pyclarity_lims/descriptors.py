@@ -393,9 +393,9 @@ class XmlPooledInputDict(XmlDictionary, Nestable):
         node = ElementTree.SubElement(self.rootnode(self.instance), 'pool')
         node.attrib['name'] = key
         node.attrib['uri'] = pool.uri
-        for input in list_input:
+        for inart in list_input:
             sub = ElementTree.Element('input')
-            sub.attrib['uri'] = input.uri
+            sub.attrib['uri'] = inart.uri
             node.append(sub)
 
     def _delitem(self, key):
