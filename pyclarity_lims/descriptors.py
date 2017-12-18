@@ -292,6 +292,8 @@ class XmlAction(XmlElementAttributeDict):
         self._elems[0].attrib[key] = value
 
     def _delitem(self, key):
+        if key in ['artifact', 'step', 'rework-step']:
+            key = key + '-uri'
         del self._elems[0].attrib[key]
 
 
@@ -312,13 +314,20 @@ class PlacementDictionary(XmlDictionary):
     def _setitem(self, key, value):
         if not isinstance(key, str):
             raise ValueError()
+        elem1 = None
+        for node in self._elems:
+            if node.find('value').text == key:
+                elem1 = node
+                break
+        if elem1:
+            self.rootnode(self.instance).remove(elem1)
         elem1 = ElementTree.SubElement(self.rootnode(self.instance), 'placement', uri=value.uri, limsid=value.id)
         elem2 = ElementTree.SubElement(elem1, 'value')
         elem2.text = key
 
     def _delitem(self, key):
         for node in self._elems:
-            if node.text == key:
+            if node.find('value').text == key:
                 self.rootnode(self.instance).remove(node)
                 break
 
@@ -347,7 +356,10 @@ class SubTagDictionary(XmlDictionary):
         tag_node = self.rootnode(self.instance).find(self.tag)
         if tag_node is None:
             tag_node = ElementTree.SubElement(self.rootnode(self.instance), self.tag)
-        elem = ElementTree.SubElement(tag_node, key)
+
+        elem = tag_node.find(key)
+        if elem is None:
+            elem = ElementTree.SubElement(tag_node, key)
         elem.text = value
 
     def _delitem(self, key):
@@ -356,6 +368,52 @@ class SubTagDictionary(XmlDictionary):
             if node.tag == key:
                 tag_node.remove(node)
                 break
+
+
+class XmlPooledInputDict(XmlDictionary, Nestable):
+    """An dictionary where the key is the pool name and the value a tuples (pool, inputs)
+        the first item of the tuple is an output Artifact representing the pool.
+        the second item is a tuple containing the input artifacts for that pool.
+        """
+
+    def __init__(self, instance, *args, **kwargs):
+        Nestable.__init__(self, nesting=['pooled-inputs'])
+        XmlDictionary.__init__(self, instance, *args, **kwargs)
+
+    def _update_elems(self):
+        self._elems = self.rootnode(self.instance).findall('pool')
+
+    def _setitem(self, key, value):
+        if not isinstance(key, str):
+            raise ValueError()
+        if not isinstance(value, tuple) or not len(value) == 2:
+            raise TypeError('You need to provide a tuple of 2 elements not ' + type(value))
+        pool, list_input = value
+        self._delitem(key)
+        node = ElementTree.SubElement(self.rootnode(self.instance), 'pool')
+        node.attrib['name'] = key
+        node.attrib['uri'] = pool.uri
+        for inart in list_input:
+            sub = ElementTree.Element('input')
+            sub.attrib['uri'] = inart.uri
+            node.append(sub)
+
+    def _delitem(self, key):
+        for node in self._elems:
+            if node.attrib['name'] == key:
+                self.rootnode(self.instance).remove(node)
+                break
+
+    def _parse_element(self, element, **kwargs):
+        from pyclarity_lims.entities import Artifact
+        dict.__setitem__(
+            self,
+            element.attrib.get('name'),
+            (
+                Artifact(self.instance.lims, uri=element.attrib.get('output-uri')),
+                tuple(Artifact(self.instance.lims, uri=sub.attrib.get('uri')) for sub in element.findall('input'))
+            )
+        )
 
 
 # List types

@@ -5,7 +5,8 @@ from pyclarity_lims.descriptors import StringDescriptor, UdfDictionaryDescriptor
     InputOutputMapList, LocationDescriptor, IntegerAttributeDescriptor, \
     StringAttributeDescriptor, EntityListDescriptor, StringListDescriptor, PlacementDictionaryDescriptor, \
     ReagentLabelList, AttributeListDescriptor, StringDictionaryDescriptor, OutputPlacementListDescriptor, \
-    XmlActionList, MutableDescriptor
+    XmlActionList, MutableDescriptor, XmlPooledInputDict
+
 try:
     from urllib.parse import urlsplit, urlparse, parse_qs, urlunparse
 except ImportError:
@@ -774,6 +775,18 @@ class StepProgramStatus(Entity):
     message = StringDescriptor('message')
     """Message return by the program"""
 
+
+class StepPools(Entity):
+    pooled_inputs = MutableDescriptor(XmlPooledInputDict)
+    """Dictionary where the key are the pool names and the values are tuples (pool, inputs) representing a pool.
+    Each tuple has two elements:
+
+        * an output Artifact containing the pool.
+
+        * a tuple containing the input artifacts for that pool.
+
+    """
+
 class Step(Entity):
     "Step, as defined by the genologics API."
 
@@ -792,6 +805,8 @@ class Step(Entity):
     """link to the :py:class:`StepDetails <pyclarity_lims.entities.StepDetails>` entity"""
     program_status = EntityDescriptor('program-status', StepProgramStatus)
     """link to the :py:class:`StepProgramStatus <pyclarity_lims.entities.StepProgramStatus>` entity"""
+    pools = EntityDescriptor('pools', StepPools)
+    """link to the :py:class:`StepPools <pyclarity_lims.entities.StepPools>` entity"""
     date_started = StringDescriptor('date-started')
     """The date at which the step started in format Year-Month-DayTHour:Min:Sec i.e. 2016-11-22T10:43:32.857+00:00"""
     date_completed = StringDescriptor('date-completed')
