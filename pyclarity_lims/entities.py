@@ -793,8 +793,11 @@ class StepPools(Entity):
     pooled_inputs = MutableDescriptor(XmlPooledInputDict)
     """Dictionary where the key are the pool names and the values are tuples (pool, inputs) representing a pool.
     Each tuple has two elements:
-        the first item is an output Artifact containing the pool.
-        the second item is a tuple containing the input artifacts for that pool.
+
+        * an output Artifact containing the pool.
+
+        * a tuple containing the input artifacts for that pool.
+
     """
 
 class Step(Entity):
