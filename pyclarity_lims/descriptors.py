@@ -748,10 +748,18 @@ class QueuedArtifactList(TagXmlList):
         queue_date = None
         if qt is not None:
             h, s, t = qt.text.rpartition(':')
+            qt = h + t
+            microsec = ''
+            if '.' in qt:
+                microsec = '.%f'
+            date_format = '%Y-%m-%dT%H:%M:%S' + microsec
             try:
-                queue_date = datetime.datetime.strptime(h+t, '%Y-%m-%dT%H:%M:%S.%f%z')
+                queue_date = datetime.datetime.strptime(qt, date_format + '%z')
             except ValueError:
-                queue_date = datetime.datetime.strptime(h + t, '%Y-%m-%dT%H:%M:%S%z')
+                # support for python 2.7 ignore time zone
+                # use python 3 for timezone support
+                qt = qt.split('+')[0]
+                queue_date = datetime.datetime.strptime(qt, date_format)
         list.append(self, (input, queue_date, location))
 
 
