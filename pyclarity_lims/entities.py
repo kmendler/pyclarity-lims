@@ -5,7 +5,7 @@ from pyclarity_lims.descriptors import StringDescriptor, UdfDictionaryDescriptor
     InputOutputMapList, LocationDescriptor, IntegerAttributeDescriptor, \
     StringAttributeDescriptor, EntityListDescriptor, StringListDescriptor, PlacementDictionaryDescriptor, \
     ReagentLabelList, AttributeListDescriptor, StringDictionaryDescriptor, OutputPlacementListDescriptor, \
-    XmlActionList, MutableDescriptor, XmlPooledInputDict
+    XmlActionList, MutableDescriptor, XmlPooledInputDict, QueuedArtifactList
 
 try:
     from urllib.parse import urlsplit, urlparse, parse_qs, urlunparse
@@ -1041,13 +1041,28 @@ class ReagentType(Entity):
                         self.sequence = child.attrib.get("value")
 
 class Queue(Entity):
-    """Queue of a given step"""
+    """Queue of a given workflow stage"""
     _URI = "queues"
     _TAG= "queue"
     _PREFIX = "que"
 
-    artifacts = EntityListDescriptor("artifact", Artifact, nesting=["artifacts"])
-    """List of :py:class:`artifacts <pyclarity_lims.entities.Artifact>` associated with this workflow."""
+    queued_artifacts = MutableDescriptor(QueuedArtifactList)
+    """
+    List of :py:class:`artifacts <pyclarity_lims.entities.Artifact>` associated with this workflow stage.
+    alongside the time the've been added to that queue and the container they're in.
+    The list contains tuples organise as follow:
+        (A, B, (C, D)) where
+         A is an :py:class:`artifacts <pyclarity_lims.entities.Artifact>`
+         B is a :py:class:`datetime <datetime.datetime>` object,
+         C is a :py:class:`container <pyclarity_lims.entities.Container>`
+         D is a string specifying the location such as "1:1"
+    """
+
+    @property
+    def artifacts(self):
+        """List of :py:class:`artifacts <pyclarity_lims.entities.Artifact>` associated with this workflow stage."""
+        return [i[0] for i in self.queued_artifacts]
+
 
 Sample.artifact = EntityDescriptor('artifact', Artifact)
 StepActions.step = EntityDescriptor('step', Step)
