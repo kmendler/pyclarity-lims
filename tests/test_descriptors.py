@@ -772,28 +772,13 @@ class TestQueuedArtifactList(TestCase):
 
     def test_parse(self):
         queued_artifacts = QueuedArtifactList(self.instance1)
-        # qart = (
-        #     Artifact(self.lims, id='a1'),
-        #     datetime.datetime(2011, 12, 25, 1, 10, 10, 50000, tzinfo=datetime.timezone.utc),
-        #     (Container(self.lims, id='c1'), 'A:1')
-        # )
         qart = self.get_queue_art('a1', 'A:1', 50000, datetime.timedelta(0, 0))
         assert queued_artifacts[0] == qart
-        # qart = (
-        #     Artifact(self.lims, id='a2'),
-        #     datetime.datetime(2011, 12, 25, 1, 10, 10, 200000, tzinfo=datetime.timezone(datetime.timedelta(second=3600))),
-        #     (Container(self.lims, id='c1'), 'A:2')
-        # )
         qart = self.get_queue_art('a2', 'A:2', 200000, datetime.timedelta(0, 3600))
         assert queued_artifacts[1] == qart
 
     def test_set(self):
         queued_artifacts = QueuedArtifactList(self.instance1)
-        # qart = (
-        #     Artifact(self.lims, id='a3'),
-        #     datetime.datetime(2011, 12, 25, 1, 10, 11, 50000, tzinfo=datetime.timezone.utc),
-        #     (Container(self.lims, id='c1'), 'A:3')
-        # )
         qart = self.get_queue_art('a1', 'A:3',  50000, datetime.timedelta(0, 0))
         with pytest.raises(NotImplementedError):
             queued_artifacts.append(qart)
