@@ -9,10 +9,10 @@ from pyclarity_lims.constants import nsmap
 from pyclarity_lims.descriptors import StringDescriptor, StringAttributeDescriptor, StringListDescriptor, \
     StringDictionaryDescriptor, IntegerDescriptor, BooleanDescriptor, UdfDictionary, EntityDescriptor, \
     InputOutputMapList, EntityListDescriptor, PlacementDictionary, EntityList, SubTagDictionary, ExternalidList,\
-    XmlElementAttributeDict, XmlAttributeList, XmlReagentLabelList, XmlPooledInputDict
-from pyclarity_lims.entities import Artifact
+    XmlElementAttributeDict, XmlAttributeList, XmlReagentLabelList, XmlPooledInputDict, XmlAction
+from pyclarity_lims.entities import Artifact, ProtocolStep
 from pyclarity_lims.lims import Lims
-from tests import  elements_equal
+from tests import elements_equal
 
 if version_info[0] == 2:
     from mock import Mock
@@ -94,7 +94,7 @@ class TestBooleanDescriptor(TestDescriptor):
 
     def test__get__(self):
         bd = self._make_desc(BooleanDescriptor, 'istest')
-        assert bd.__get__(self.instance, None) == True
+        assert bd.__get__(self.instance, None)
 
     def test__set__(self):
         bd = self._make_desc(BooleanDescriptor, 'istest')
@@ -246,6 +246,7 @@ class TestStringDictionaryDescriptor(TestDescriptor):
         assert isinstance(res, dict)
         assert res['mykey1'] == 'myvalue1'
 
+
 class TestUdfDictionary(TestCase):
     def setUp(self):
         et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -345,8 +346,7 @@ class TestUdfDictionary(TestCase):
         del self.dict1['test']
         with pytest.raises(KeyError):
             self.dict1['test']
-        assert self._get_udf_value(self.dict1, 'test') == None
-
+        assert self._get_udf_value(self.dict1, 'test') is None
 
     def test_items(self):
         pass
@@ -500,6 +500,7 @@ class TestXmlPooledInputDict(TestCase):
         assert len(self.dict1) == 3
         assert len(self.dict1.rootnode(self.dict1.instance)) == 3
 
+
 class TestEntityList(TestCase):
 
     def setUp(self):
@@ -600,7 +601,6 @@ class TestInputOutputMapList(TestCase):
         assert sorted(res[0][1].keys()) == sorted(expected_keys_ouput)
 
 
-
 class TestExternalidList(TestCase):
 
     def setUp(self):
@@ -648,7 +648,7 @@ class TestXmlAttributeList(TestCase):
     def test_get(self):
         al = XmlAttributeList(self.instance1, tag='test-tag', nesting=['test-tags'])
         assert al[0] == {'attrib1': 'value1', 'attrib2':'value2'}
-        assert al[1] == {'attrib1': 'value11', 'attrib2':'value12', 'attrib3':'value13'}
+        assert al[1] == {'attrib1': 'value11', 'attrib2': 'value12', 'attrib3':'value13'}
 
     def test_append(self):
         el = XmlAttributeList(self.instance1, tag='test-tag', nesting=['test-tags'])
@@ -694,3 +694,37 @@ class TestXmlReagentLabelList(TestCase):
             rl.instance.root.findall('reagent-label')[1],
             ElementTree.fromstring('''<reagent-label name="another label"/>''')
         )
+
+
+class TestXmlAction(TestCase):
+
+    def setUp(self):
+        et = ElementTree.fromstring('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <test-entry>
+                <next-action step-uri="{url}/prt/1/stp/1" action="nextstep" artifact-uri="{url}/arts/a1"/>
+                </test-entry>'''.format(url='http://testgenologics.com:4040'))
+
+        et1 = ElementTree.fromstring('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <test-entry>
+        <next-action artifact-uri="{url}/arts/a1"/>
+        </test-entry>'''.format(url='http://testgenologics.com:4040'))
+
+        self.lims = Lims('http://testgenologics.com:4040', username='test', password='password')
+        self.instance1 = Mock(root=et, lims=self.lims)
+        self.instance_empty = Mock(root=et1, lims=self.lims)
+
+    def test_parse(self):
+        action = XmlAction(self.instance1, tag='next-action')
+        assert action['action'] == 'nextstep'
+        assert action['step'] == ProtocolStep(self.lims, uri='http://testgenologics.com:4040/prt/1/stp/1')
+        assert action['artifact'] == Artifact(self.lims, uri='http://testgenologics.com:4040/arts/a1')
+
+    def test_set(self):
+        action = XmlAction(self.instance_empty, tag='next-action')
+        action['step'] = ProtocolStep(self.lims, uri='http://testgenologics.com:4040/prt/1/stp/1')
+        assert action.instance.root.find('next-action').attrib['step-uri'] == 'http://testgenologics.com:4040/prt/1/stp/1'
+        action['action'] = 'nextstep'
+        assert action.instance.root.find('next-action').attrib['action'] == 'nextstep'
+
+        with pytest.raises(KeyError):
+            action['whatever'] = 'youwant'

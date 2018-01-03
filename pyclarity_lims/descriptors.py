@@ -270,25 +270,30 @@ class XmlAction(XmlElementAttributeDict):
     artifact: The Artifact associated with this Action
     step: The next step associated with this action
     rework-step: The step associated with this action when the Artifact need to be requeued
+    action: The type of action to perform. (leave, repeat, remove, review, complete, store, nextstep, rework, completerepeat, unknown)
     """
     def _parse_element(self, element, **kwargs):
-        from pyclarity_lims.entities import Artifact, Step
+        from pyclarity_lims.entities import Artifact, ProtocolStep
         for k, v in element.attrib.items():
+
             if k == 'artifact-uri':
                 k = 'artifact'
                 v = Artifact(self.instance.lims, uri=v)
-            elif k == 'step-uri':
-                k = 'step'
-                v = Step(self.instance.lims, uri=v)
-            elif k == 'rework-step-uri':
-                k = 'rework-step'
-                v = Step(self.instance.lims, uri=v)
+            elif k in ('step-uri', 'rework-step-uri'):
+                k = k[:-(len('-uri'))]
+                v = ProtocolStep(self.instance.lims, uri=v)
             dict.__setitem__(self, k, v)
 
     def _setitem(self, key, value):
-        if key in ['artifact', 'step', 'rework-step']:
-            key = key + '-uri'
+        from pyclarity_lims.entities import Artifact, ProtocolStep
+        if (key in ['artifact'] and isinstance(value, Artifact)) or \
+           (key in ['step', 'rework-step'] and isinstance(value, ProtocolStep)):
+            key += '-uri'
             value = value.uri
+        elif key in ['action']:
+            pass
+        else:
+            raise KeyError('%s Is not a supported key for next action' % key)
         self._elems[0].attrib[key] = value
 
     def _delitem(self, key):
