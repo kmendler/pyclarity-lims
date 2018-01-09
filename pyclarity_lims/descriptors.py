@@ -736,7 +736,7 @@ class QueuedArtifactList(TagXmlList):
 
     def _parse_element(self, element, lims, **kwargs):
         from pyclarity_lims.entities import Artifact, Container
-        input = Artifact(lims, uri=element.attrib['uri'])
+        input_art = Artifact(lims, uri=element.attrib['uri'])
         loc = element.find('location')
         location = (None, None)
         if loc:
@@ -760,7 +760,7 @@ class QueuedArtifactList(TagXmlList):
                 # use python 3 for timezone support
                 qt = qt.split('+')[0]
                 queue_date = datetime.datetime.strptime(qt, date_format)
-        list.append(self, (input, queue_date, location))
+        list.append(self, (input_art, queue_date, location))
 
 
 # Descriptors: This section contains the object that can be used in entities
