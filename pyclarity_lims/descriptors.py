@@ -905,8 +905,11 @@ class LocationDescriptor(TagDescriptor):
         from pyclarity_lims.entities import Container
         instance.get()
         node = self.rootnode(instance).find(self.tag)
-        uri = node.find('container').attrib['uri']
-        return Container(instance.lims, uri=uri), node.find('value').text
+        if node:
+            uri = node.find('container').attrib['uri']
+            return Container(instance.lims, uri=uri), node.find('value').text
+        else:
+            return None
 
 
 class MutableDescriptor(BaseDescriptor):
