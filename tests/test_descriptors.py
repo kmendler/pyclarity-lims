@@ -3,14 +3,15 @@ from sys import version_info
 from unittest import TestCase
 from xml.etree import ElementTree
 
+import datetime
 import pytest
 
 from pyclarity_lims.constants import nsmap
 from pyclarity_lims.descriptors import StringDescriptor, StringAttributeDescriptor, StringListDescriptor, \
     StringDictionaryDescriptor, IntegerDescriptor, BooleanDescriptor, UdfDictionary, EntityDescriptor, \
     InputOutputMapList, EntityListDescriptor, PlacementDictionary, EntityList, SubTagDictionary, ExternalidList,\
-    XmlElementAttributeDict, XmlAttributeList, XmlReagentLabelList, XmlPooledInputDict, XmlAction
-from pyclarity_lims.entities import Artifact, ProtocolStep
+    XmlElementAttributeDict, XmlAttributeList, XmlReagentLabelList, XmlPooledInputDict, XmlAction, QueuedArtifactList
+from pyclarity_lims.entities import Artifact, ProtocolStep, Container
 from pyclarity_lims.lims import Lims
 from tests import elements_equal
 
@@ -728,3 +729,58 @@ class TestXmlAction(TestCase):
 
         with pytest.raises(KeyError):
             action['whatever'] = 'youwant'
+
+
+class TestQueuedArtifactList(TestCase):
+    def setUp(self):
+        et = ElementTree.fromstring('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <test-entry>
+                <artifacts>
+                <artifact uri="{url}/artifacts/a1">
+                <queue-time>2011-12-25T01:10:10.050+00:00</queue-time>
+                <location>
+                <container uri="{url}/containers/c1"/>
+                <value>A:1</value>
+                </location>
+                </artifact>
+                <artifact uri="{url}/artifacts/a2">
+                <queue-time>2011-12-25T01:10:10.200+01:00</queue-time>
+                <location>
+                <container uri="{url}/containers/c1"/>
+                <value>A:2</value>
+                </location>
+                </artifact>
+                </artifacts>
+                </test-entry>'''.format(url='http://testgenologics.com:4040/api/v2'))
+
+        self.lims = Lims('http://testgenologics.com:4040', username='test', password='password')
+        self.instance1 = Mock(root=et, lims=self.lims)
+
+    def get_queue_art(self, art_id, pos, microsec, time_delta):
+        if version_info[0] == 2:
+            return (
+                Artifact(self.lims, id=art_id),
+                datetime.datetime(2011, 12, 25, 1, 10, 10, microsec),
+                (Container(self.lims, id='c1'), pos)
+            )
+        else:
+            return (
+                Artifact(self.lims, id=art_id),
+                datetime.datetime(2011, 12, 25, 1, 10, 10, microsec, tzinfo=datetime.timezone(time_delta)),
+                (Container(self.lims, id='c1'), pos)
+            )
+
+    def test_parse(self):
+        queued_artifacts = QueuedArtifactList(self.instance1)
+        qart = self.get_queue_art('a1', 'A:1', 50000, datetime.timedelta(0, 0))
+        assert queued_artifacts[0] == qart
+        qart = self.get_queue_art('a2', 'A:2', 200000, datetime.timedelta(0, 3600))
+        assert queued_artifacts[1] == qart
+
+    def test_set(self):
+        queued_artifacts = QueuedArtifactList(self.instance1)
+        qart = self.get_queue_art('a1', 'A:3',  50000, datetime.timedelta(0, 0))
+        with pytest.raises(NotImplementedError):
+            queued_artifacts.append(qart)
+
+

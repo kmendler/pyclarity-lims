@@ -721,6 +721,48 @@ class ExternalidList(XmlList):
         list.append(self, (element.attrib.get('id'), element.attrib.get('uri')))
 
 
+class QueuedArtifactList(TagXmlList):
+    """This is a list of Artifact associated with the time they spent in the queue and their location on a plate.
+    The list contains tuples organise as follow:
+        (A, B, (C, D)) where
+         A is an artifact
+         B is a datetime object,
+         C is a container
+         D is a string specifying the location such as "1:1"
+        """
+
+    def __init__(self, instance, *args, **kwargs):
+        TagXmlList.__init__(self, instance, tag='artifact', nesting=['artifacts'], *args, **kwargs)
+
+    def _parse_element(self, element, lims, **kwargs):
+        from pyclarity_lims.entities import Artifact, Container
+        input_art = Artifact(lims, uri=element.attrib['uri'])
+        loc = element.find('location')
+        location = (None, None)
+        if loc:
+            location = (
+                Container(lims, uri=loc.find('container').attrib['uri']),
+                loc.find('value').text
+            )
+        qt = element.find('queue-time')
+        queue_date = None
+        if qt is not None:
+            h, s, t = qt.text.rpartition(':')
+            qt = h + t
+            microsec = ''
+            if '.' in qt:
+                microsec = '.%f'
+            date_format = '%Y-%m-%dT%H:%M:%S' + microsec
+            try:
+                queue_date = datetime.datetime.strptime(qt, date_format + '%z')
+            except ValueError:
+                # support for python 2.7 ignore time zone
+                # use python 3 for timezone support
+                qt = qt.split('+')[0]
+                queue_date = datetime.datetime.strptime(qt, date_format)
+        list.append(self, (input_art, queue_date, location))
+
+
 # Descriptors: This section contains the object that can be used in entities
 class BaseDescriptor(XmlElement):
     """Abstract base descriptor for an instance attribute."""
