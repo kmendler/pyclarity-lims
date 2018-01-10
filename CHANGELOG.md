@@ -1,10 +1,12 @@
 Changelog for Pyclarity-Lims
 ============================
 
-0.5 (unreleased)
-----------------
+0.4.2 (2018-01-10)
+------------------
 
-- Nothing changed yet.
+- Parse pools in a step as dictionary.
+- Fix next action in the Step Action object
+- Better parsing of the Queue to retrieve the time artifacts were queued 
 
 
 0.4.1 (2017-08-04)
