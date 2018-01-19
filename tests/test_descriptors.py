@@ -784,7 +784,7 @@ class TestQueuedArtifactList(TestCase):
         qart = self.get_queue_art('a2', 'A:2', 200000, datetime.timedelta(0, 3600))
         assert queued_artifacts[1] == qart
         qart = self.get_queue_art('a3', 'A:3', 50000, datetime.timedelta(0, 0))
-        assert queued_artifacts[1] == qart
+        assert queued_artifacts[2] == qart
 
     def test_set(self):
         queued_artifacts = QueuedArtifactList(self.instance1)
