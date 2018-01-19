@@ -750,6 +750,13 @@ class TestQueuedArtifactList(TestCase):
                 <value>A:2</value>
                 </location>
                 </artifact>
+                <artifact uri="{url}/artifacts/a3">
+                <queue-time>2011-12-25T01:10:10.050-00:00</queue-time>
+                <location>
+                <container uri="{url}/containers/c1"/>
+                <value>A:3</value>
+                </location>
+                </artifact>
                 </artifacts>
                 </test-entry>'''.format(url='http://testgenologics.com:4040/api/v2'))
 
@@ -776,10 +783,12 @@ class TestQueuedArtifactList(TestCase):
         assert queued_artifacts[0] == qart
         qart = self.get_queue_art('a2', 'A:2', 200000, datetime.timedelta(0, 3600))
         assert queued_artifacts[1] == qart
+        qart = self.get_queue_art('a3', 'A:3', 50000, datetime.timedelta(0, 0))
+        assert queued_artifacts[1] == qart
 
     def test_set(self):
         queued_artifacts = QueuedArtifactList(self.instance1)
-        qart = self.get_queue_art('a1', 'A:3',  50000, datetime.timedelta(0, 0))
+        qart = self.get_queue_art('a1', 'A:4',  50000, datetime.timedelta(0, 0))
         with pytest.raises(NotImplementedError):
             queued_artifacts.append(qart)
 
