@@ -762,7 +762,7 @@ class QueuedArtifactList(TagXmlList):
                     qt = qt.split('+')[0]
                 else:
                     qt_array = qt.split('-')
-                    qt = qt_array[0] + qt_array[1] + qt_array[2]
+                    qt = qt_array[0] + "-" + qt_array[1] + "-" + qt_array[2]
                 queue_date = datetime.datetime.strptime(qt, date_format)
         list.append(self, (input_art, queue_date, location))
 
