@@ -758,7 +758,11 @@ class QueuedArtifactList(TagXmlList):
             except ValueError:
                 # support for python 2.7 ignore time zone
                 # use python 3 for timezone support
-                qt = qt.split('+')[0]
+                if '+' in qt:
+                    qt = qt.split('+')[0]
+                else:
+                    qt_array = qt.split('-')
+                    qt = qt_array[0] + "-" + qt_array[1] + "-" + qt_array[2]
                 queue_date = datetime.datetime.strptime(qt, date_format)
         list.append(self, (input_art, queue_date, location))
 
