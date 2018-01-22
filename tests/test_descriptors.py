@@ -436,6 +436,12 @@ class TestSubTagDictionary(TestCase):
         self.instance1 = Mock(root=et, lims=self.lims)
         self.dict1 = SubTagDictionary(self.instance1, tag='test-tag')
 
+        et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <test-entry xmlns:udf="http://genologics.com/ri/userdefined">
+        </test-entry>""")
+        self.instance2 = Mock(root=et, lims=self.lims)
+        self.dict2 = SubTagDictionary(self.instance2, tag='test-tag')
+
     def test___getitem__(self):
         assert self.dict1['key1'] == 'value1'
 
@@ -449,6 +455,12 @@ class TestSubTagDictionary(TestCase):
         assert len(self.dict1.rootnode(self.dict1.instance)) == 2
         assert self.dict1.rootnode(self.dict1.instance).find('key2').text == 'value2'
         assert self.dict1['key2'] == 'value2'
+
+    def test___setitem__from_empty(self):
+        assert len(self.dict2.rootnode(self.dict2.instance)) == 0
+        self.dict2['key1'] = 'value1'
+        assert self.dict2.rootnode(self.dict2.instance).find('key1').text == 'value1'
+        assert len(self.dict2.rootnode(self.dict2.instance)) == 1
 
 
 class TestXmlElementAttributeDict(TestCase):
