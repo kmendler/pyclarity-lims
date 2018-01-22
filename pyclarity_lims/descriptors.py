@@ -343,8 +343,10 @@ class SubTagDictionary(XmlDictionary, Nestable):
     and the value is the text of the sub element.
     """
     def __init__(self, instance, tag, **kwargs):
-        self.tag = tag
-        Nestable.__init__(self, [tag])
+        # In case extra nesting is provided
+        nesting = kwargs.get('nesting', [])
+        nesting.append(tag)
+        Nestable.__init__(self, nesting=nesting)
         XmlDictionary.__init__(self, instance)
 
     def _update_elems(self):
