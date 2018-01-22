@@ -78,7 +78,8 @@ class XmlDictionary(XmlMutable, dict):
 
     def clear(self):
         dict.clear(self)
-        self.rootnode(self.instance).clear()
+        for elem in self._elems:
+            self.rootnode(self.instance).remove(elem)
         self._update_elems()
 
     def _update_elems(self):
@@ -337,18 +338,19 @@ class PlacementDictionary(XmlDictionary):
                 break
 
 
-class SubTagDictionary(XmlDictionary):
+class SubTagDictionary(XmlDictionary, Nestable):
     """Dictionary of xml sub element where the key is the tag
     and the value is the text of the sub element.
     """
     def __init__(self, instance, tag, **kwargs):
         self.tag = tag
+        Nestable.__init__(self, [tag])
         XmlDictionary.__init__(self, instance)
 
     def _update_elems(self):
-        tag_node = self.rootnode(self.instance).find(self.tag)
-        if tag_node:
-            self._elems = tag_node.getchildren()
+        root_node = self.rootnode(self.instance)
+        if root_node:
+            self._elems = root_node.getchildren()
         else:
             self._elems = []
 
@@ -358,20 +360,18 @@ class SubTagDictionary(XmlDictionary):
     def _setitem(self, key, value):
         if not isinstance(key, str):
             raise ValueError()
-        tag_node = self.rootnode(self.instance).find(self.tag)
-        if tag_node is None:
-            tag_node = ElementTree.SubElement(self.rootnode(self.instance), self.tag)
+        root_node = self.rootnode(self.instance)
 
-        elem = tag_node.find(key)
+        elem = root_node.find(key)
         if elem is None:
-            elem = ElementTree.SubElement(tag_node, key)
+            elem = ElementTree.SubElement(root_node, key)
         elem.text = value
 
     def _delitem(self, key):
-        tag_node = self.rootnode(self.instance).find(self.tag)
+        root_node = self.rootnode(self.instance)
         for node in self._elems:
             if node.tag == key:
-                tag_node.remove(node)
+                root_node.remove(node)
                 break
 
 
@@ -437,7 +437,8 @@ class XmlList(XmlMutable, list):
     def clear(self):
         # python 2.7 does not have a clear function for list
         del self[:]
-        self.rootnode(self.instance).clear()
+        for elem in self._elems:
+            self.rootnode(self.instance).remove(elem)
         self._update_elems()
 
     def __add__(self, other_list):
