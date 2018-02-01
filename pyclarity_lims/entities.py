@@ -34,7 +34,10 @@ class Entity(object):
     def __new__(cls, lims, uri=None, id=None, _create_new=False):
         if not uri:
             if id:
-                uri = lims.get_uri(cls._URI, id)
+                if cls._URI:
+                    uri = lims.get_uri(cls._URI, id)
+                else:
+                    raise ValueError("%s requires a uri not an id" % cls.__name__)
             elif _create_new:
                 # create the Object without id or uri
                 pass
@@ -85,12 +88,12 @@ class Entity(object):
     def put(self):
         """Save this instance by doing PUT of its serialized XML."""
         data = self.lims.tostring(ElementTree.ElementTree(self.root))
-        self.lims.put(self.uri, data)
+        return self.lims.put(self.uri, data)
 
     def post(self):
         """Save this instance with POST"""
         data = self.lims.tostring(ElementTree.ElementTree(self.root))
-        self.lims.post(self.uri, data)
+        return self.lims.post(self.uri, data)
 
     @classmethod
     def _create(cls, lims, **kwargs):
@@ -628,6 +631,51 @@ class Artifact(Entity):
         - C the name of the Step.
     """
 
+
+class ReagentKit(Entity):
+    """Type of Reagent with information about the provider"""
+    _URI = "reagentkits"
+    _TAG = "reagent-kit"
+    _PREFIX = 'kit'
+
+    name = StringDescriptor('name')
+    """Name of the reagent kit"""
+    supplier = StringDescriptor('supplier')
+    """Supplier for the reagent kit"""
+    website = StringDescriptor('website')
+    """Website associated with the reagent kit"""
+    archived = BooleanDescriptor('archived')
+    """Wether the reagent kit is archived or not"""
+
+
+class ReagentLot(Entity):
+    """Reagent Lots contain information about a particulal lot of reagent used in a step"""
+    _URI = "reagentlots"
+    _TAG = "reagent-lot"
+    _PREFIX = 'lot'
+
+    reagent_kit = EntityDescriptor('reagent-kit', ReagentKit)
+    """:py:class:`Reagent kit <pyclarity_lims.entities.ReagentKit>` associated with this lot."""
+    name = StringDescriptor('name')
+    """Name of the reagent lot"""
+    lot_number = StringDescriptor('lot-number')
+    """Lot number"""
+    created_date = StringDescriptor('created-date')
+    """The date at which the lot was created in format Year-Month-Day i.e. 2016-12-05."""
+    last_modified_date = StringDescriptor('last-modified-date')
+    """The date at which the lot was last modified in format Year-Month-Day i.e. 2016-12-05."""
+    expiry_date = StringDescriptor('expiry-date')
+    """The date at which the lot expires in format Year-Month-Day i.e. 2016-12-05."""
+    created_by = EntityDescriptor('created-by', Researcher)
+    """:py:class:`Researcher <pyclarity_lims.entities.Researcher>` that created that lot."""
+    last_modified_by = EntityDescriptor('last-modified-by', Researcher)
+    """:py:class:`Researcher <pyclarity_lims.entities.Researcher>` that last modified this lot."""
+    status = StringDescriptor('status')
+    """Status of the lot."""
+    usage_count = IntegerDescriptor('usage-count')
+    """Number of time the lot was used."""
+
+
 class StepPlacements(Entity):
     """Placements from within a step. Supports POST"""
 
@@ -703,53 +751,10 @@ class StepActions(Entity):
         return self._escalation
 
 
-class ReagentKit(Entity):
-    """Type of Reagent with information about the provider"""
-    _URI = "reagentkits"
-    _TAG = "reagent-kit"
-    _PREFIX = 'kit'
-
-    name = StringDescriptor('name')
-    """Name of the reagent kit"""
-    supplier = StringDescriptor('supplier')
-    """Supplier for the reagent kit"""
-    website = StringDescriptor('website')
-    """Website associated with the reagent kit"""
-    archived = BooleanDescriptor('archived')
-    """Wether the reagent kit is archived or not"""
-
-
-class ReagentLot(Entity):
-    """Reagent Lots contain information about a particulal lot of reagent used in a step"""
-    _URI = "reagentlots"
-    _TAG = "reagent-lot"
-    _PREFIX = 'lot'
-
-    reagent_kit = EntityDescriptor('reagent-kit', ReagentKit)
-    """:py:class:`Reagent kit <pyclarity_lims.entities.ReagentKit>` associated with this lot."""
-    name = StringDescriptor('name')
-    """Name of the reagent lot"""
-    lot_number = StringDescriptor('lot-number')
-    """Lot number"""
-    created_date = StringDescriptor('created-date')
-    """The date at which the lot was created in format Year-Month-Day i.e. 2016-12-05."""
-    last_modified_date = StringDescriptor('last-modified-date')
-    """The date at which the lot was last modified in format Year-Month-Day i.e. 2016-12-05."""
-    expiry_date = StringDescriptor('expiry-date')
-    """The date at which the lot expires in format Year-Month-Day i.e. 2016-12-05."""
-    created_by = EntityDescriptor('created-by', Researcher)
-    """:py:class:`Researcher <pyclarity_lims.entities.Researcher>` that created that lot."""
-    last_modified_by = EntityDescriptor('last-modified-by', Researcher)
-    """:py:class:`Researcher <pyclarity_lims.entities.Researcher>` that last modified this lot."""
-    status = StringDescriptor('status')
-    """Status of the lot."""
-    usage_count = IntegerDescriptor('usage-count')
-    """Number of time the lot was used."""
-
-
 class StepReagentLots(Entity):
     reagent_lots = EntityListDescriptor('reagent-lot', ReagentLot, nesting=['reagent-lots'])
     """List of :py:class:`ReagentLot <pyclarity_lims.entities.ReagentLot>`"""
+
 
 class StepDetails(Entity):
     """Detail associated with a step"""
@@ -799,6 +804,7 @@ class StepPools(Entity):
         * a tuple containing the input artifacts for that pool.
 
     """
+
 
 class Step(Entity):
     "Step, as defined by the genologics API."
@@ -879,6 +885,7 @@ class Step(Entity):
         self.program_status.root = e
         return self.program_status
 
+    @property
     def process(self):
         """Retrieve the Process corresponding to this Step. They share the same id"""
         return Process(self.lims, id=self.id)
@@ -925,12 +932,12 @@ class Step(Entity):
 
         # Check container name
         # Default to the require type if not provided and only possible choice
-        if not container_type_name and len(protocol_step.permittedcontainers) == 1:
-            container_type_name = protocol_step.permittedcontainers[0]
-        if protocol_step.permittedcontainers and container_type_name in protocol_step.permittedcontainers:
+        if not container_type_name and len(protocol_step.permitted_containers) == 1:
+            container_type_name = protocol_step.permitted_containers[0]
+        if protocol_step.permitted_containers and container_type_name in protocol_step.permitted_containers:
             container_type_node = ElementTree.SubElement(instance.root, 'container-type')
             container_type_node.text = container_type_name
-        elif protocol_step.permittedcontainers:
+        elif protocol_step.permitted_containers:
             # TODO: raise early if the container type name is required and missing or not in permitted type
             pass
 
@@ -963,9 +970,9 @@ class ProtocolStep(Entity):
 
     name = StringAttributeDescriptor("name")
     """Name of the step"""
-    type = EntityDescriptor('type', Processtype)
+    type = EntityDescriptor('process-type', Processtype)
     """:py:class:`Processtype <pyclarity_lims.entities.Processtype>` associated with this step."""
-    permittedcontainers = StringListDescriptor('container-type', nesting=['permitted-containers'])
+    permitted_containers = StringListDescriptor('container-type', nesting=['permitted-containers'])
     """List of name for the permitted container type in that step."""
     queue_fields = AttributeListDescriptor('queue-field', nesting=['queue-fields'])
     """List of dict describing the fields available in that step's queue."""
@@ -973,10 +980,15 @@ class ProtocolStep(Entity):
     """List of dict describing the fields available in that step's UDF."""
     sample_fields = AttributeListDescriptor('sample-field', nesting=['sample-fields'])
     """List of dict describing the field available in that step's sample view."""
-    step_properties = AttributeListDescriptor('step_property', nesting=['step_properties'])
+    step_properties = AttributeListDescriptor('step-property', nesting=['step-properties'])
     """List of dict describing the properties of this step."""
-    epp_triggers = AttributeListDescriptor('epp_trigger', nesting=['epp_triggers'])
+    epp_triggers = AttributeListDescriptor('epp-trigger', nesting=['epp-triggers'])
     """List of dict describing the EPP trigger attached to this step."""
+
+    @property
+    def queue(self):
+        """The queue associated with this protocol step. The link is possible because they share the same id."""
+        return Queue(self.lims, id=self.id)
 
 
 class Protocol(Entity):
@@ -1019,7 +1031,6 @@ class Workflow(Entity):
     """List of :py:class:`stage <pyclarity_lims.entities.Stage>` associated with this workflow."""
 
 
-
 class ReagentType(Entity):
     """Reagent Type, usually, indexes for sequencing"""
     _URI = "reagenttypes"
@@ -1039,6 +1050,7 @@ class ReagentType(Entity):
                 for child in t.findall("attribute"):
                     if child.attrib.get("name") == "Sequence":
                         self.sequence = child.attrib.get("value")
+
 
 class Queue(Entity):
     """Queue of a given workflow stage"""

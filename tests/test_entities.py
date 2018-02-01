@@ -270,7 +270,7 @@ class TestStep(TestEntities):
             spec=ProtocolStep,
             real_name='My fancy step',
             uri='http://testgenologics.com:4040/api/v2/configuration//protocols/p1/steps/p1s1',
-            permittedcontainers=['Tube']
+            permitted_containers=['Tube']
         )
         with patch('pyclarity_lims.lims.requests.post',
                    return_value=Mock(content=self.step_xml, status_code=201)) as patch_post:
@@ -298,7 +298,7 @@ class TestStep(TestEntities):
             spec=ProtocolStep,
             real_name='My fancy step',
             uri='http://testgenologics.com:4040/api/v2/configuration//protocols/p1/steps/p1s1',
-            permittedcontainers=['Tube']
+            permitted_containers=['Tube']
         )
         with patch('pyclarity_lims.lims.requests.post',
                    return_value=Mock(content=self.step_xml, status_code=201)) as patch_post:
