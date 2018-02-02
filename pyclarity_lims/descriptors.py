@@ -868,17 +868,18 @@ class StringAttributeDescriptor(TagDescriptor):
 class EntityDescriptor(TagDescriptor):
     """An instance attribute referencing another entity instance."""
 
-    def __init__(self, tag, klass):
+    def __init__(self, tag, klass, attrib='uri'):
         super(EntityDescriptor, self).__init__(tag)
         self.klass = klass
+        self.attrib = attrib
 
     def __get__(self, instance, cls):
         instance.get()
-        node = self.rootnode(instance).find(self.tag)
+        node = self.get_node(instance)
         if node is None:
             return None
         else:
-            return self.klass(instance.lims, uri=node.attrib['uri'])
+            return self.klass(instance.lims, uri=node.attrib[self.attrib])
 
     def __set__(self, instance, value):
         instance.get()
@@ -887,7 +888,7 @@ class EntityDescriptor(TagDescriptor):
             # create the new tag
             node = ElementTree.Element(self.tag)
             self.rootnode(instance).append(node)
-        node.attrib['uri'] = value.uri
+        node.attrib[self.attrib] = value.uri
 
 
 class DimensionDescriptor(TagDescriptor):

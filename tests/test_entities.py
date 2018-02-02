@@ -3,7 +3,7 @@ from unittest import TestCase
 from xml.etree import ElementTree
 
 from pyclarity_lims.entities import ProtocolStep, StepActions, Researcher, Artifact, \
-    Step, StepPlacements, Container, Stage, ReagentKit, ReagentLot, Sample, Project
+    Step, StepPlacements, Container, Stage, ReagentKit, ReagentLot, Sample, Project, Protocol, Processtype
 from pyclarity_lims.lims import Lims
 from tests import NamedMock, elements_equal
 
@@ -163,6 +163,39 @@ generic_sample_creation_xml = """
   <project uri="{url}/api/v2/projects/p1" limsid="p1">
   </project>
 </smp:samplecreation>
+"""
+
+generic_protocol_step = """
+<protstepcnf:step xmlns:protstepcnf="http://genologics.com/ri/stepconfiguration" protocol-uri="{url}/api/v2/configuration/protocols/1" uri="{url}/api/v2/configuration/protocols/1/steps/1" name="Test Step">
+<protocol-step-index>1</protocol-step-index>
+<process-type uri="{url}/api/v2/processtypes/1">Test Step</process-type>
+<permitted-containers>
+<container-type>Tube</container-type>
+</permitted-containers>
+<permitted-reagent-categories/>
+<required-reagent-kits/>
+<permitted-control-types/>
+<transitions>
+<transition next-step-uri="{url}/api/v2/configuration/protocols/1/steps/2" sequence="2" name="Test Step2"/>
+</transitions>
+<default-grouping>containerGroup</default-grouping>
+<queue-fields>
+<queue-field detail="false" style="BUILT_IN" attach-to="Analyte" name="Sample Name"/>
+</queue-fields>
+<step-fields>
+<step-field style="USER_DEFINED" attach-to="ConfiguredProcess" name="BatchID"/>
+</step-fields>
+<sample-fields>
+<sample-field style="BUILT_IN" attach-to="Analyte" name="Sample Name"/>
+<sample-field style="USER_DEFINED" attach-to="Analyte" name="Requeue Request ID"/>
+</sample-fields>
+<step-properties>
+<step-property value="false" name="qcProtocolStep"/>
+</step-properties>
+<epp-triggers>
+<epp-trigger status="RECORD_DETAILS" point="BEFORE" type="AUTOMATIC" name="Program"/>
+</epp-triggers>
+</protstepcnf:step>
 """
 
 class TestEntities(TestCase):
@@ -434,3 +467,23 @@ class TestSample(TestEntities):
             </location>
             </smp:samplecreation>'''
             assert elements_equal(ElementTree.fromstring(patch_post.call_args_list[0][1]['data']), ElementTree.fromstring(data))
+
+
+class TestProtocolStep(TestEntities):
+    protocol_step_xml = generic_protocol_step.format(url=url)
+
+    def test_parse_entity(self):
+        with patch('requests.Session.get', return_value=Mock(content=self.protocol_step_xml, status_code=200)):
+            ps = ProtocolStep(self.lims, uri='s1')
+            ps.get()
+
+            assert ps.name == 'Test Step'
+            assert ps.protocol == Protocol(self.lims, id='1')
+            assert ps.type == Processtype(self.lims, id='1')
+            assert ps.permitted_containers == ['Tube']
+            assert ps.queue_fields == [{'detail': 'false', 'style': 'BUILT_IN', 'attach-to': 'Analyte', 'name': 'Sample Name'}]
+            assert ps.step_fields == [{'style': 'USER_DEFINED', 'attach-to': 'ConfiguredProcess', 'name': 'BatchID'}]
+            assert ps.sample_fields == [{'style': 'BUILT_IN', 'attach-to': 'Analyte', 'name': 'Sample Name'}, {'style': 'USER_DEFINED', 'attach-to': 'Analyte', 'name': 'Requeue Request ID'}]
+            assert ps.step_properties == [{'value': 'false', 'name': 'qcProtocolStep'}]
+            assert ps.epp_triggers == [{'status': 'RECORD_DETAILS', 'point': 'BEFORE', 'type': 'AUTOMATIC', 'name': 'Program'}]
+

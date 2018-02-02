@@ -1081,3 +1081,5 @@ StepActions.step = EntityDescriptor('step', Step)
 Stage.workflow = EntityDescriptor('workflow', Workflow)
 Artifact.workflow_stages = EntityListDescriptor(tag='workflow-stage', klass=Stage, nesting=['workflow-stages'])
 Step.configuration = EntityDescriptor('configuration', ProtocolStep)
+ProtocolStep.protocol = EntityDescriptor(None, Protocol, attrib='protocol-uri')
+"""protocol of the step"""
