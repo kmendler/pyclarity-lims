@@ -168,8 +168,8 @@ class TestStage(TestEntity):
 
 
 class TestProtocolStep(TestEntity):
-    proprerties = ['epp_triggers', 'id', 'name', 'permitted_containers', 'queue_fields', 'sample_fields', 'step_fields',
-                   'step_properties', 'type', 'uri']
+    proprerties = ['protocol', 'queue', 'epp_triggers', 'id', 'name', 'permitted_containers', 'queue_fields',
+                   'sample_fields', 'step_fields', 'step_properties', 'type', 'uri']
     functions = ['create']
     klass = ProtocolStep
 
