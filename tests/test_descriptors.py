@@ -191,6 +191,8 @@ class TestStringAttributeDescriptor(TestDescriptor):
         assert instance_new.root.attrib['name'] == "test name2"
 
 
+
+
 class TestStringListDescriptor(TestDescriptor):
     def setUp(self):
         et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -368,7 +370,7 @@ class TestUdfDictionary(TestCase):
             assert (k, self.dict1[k]) in expected_content
 
 
-class TestPlacementDictionary(TestCase):
+class TestPlacementDictionary(TestDescriptor):
 
     def setUp(self):
         et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -376,6 +378,7 @@ class TestPlacementDictionary(TestCase):
 <placement uri="http://testgenologics.com:4040/api/v2/artifacts/a1" limsid="a1">
 <value>A:1</value>
 </placement>
+<other>thing</other>
 </test-entry>""")
         self.lims = Lims('http://testgenologics.com:4040', username='test', password='password')
         self.instance1 = Mock(root=et, lims=self.lims)
@@ -410,6 +413,15 @@ class TestPlacementDictionary(TestCase):
         del self.dict1['A:1']
         assert len(self.dict1.rootnode(self.dict1.instance).findall('placement')) == 0
 
+    def test_clear(self):
+        el = EntityList(self.instance1, 'artifact', Artifact)
+        sd = self._make_desc(StringDescriptor, 'other')
+        assert sd.__get__(self.instance1, None) == "thing"
+        assert len(self.dict1.rootnode(self.dict1.instance).findall('placement')) == 1
+        self.dict1.clear()
+        assert len(self.dict1.rootnode(self.dict1.instance).findall('placement')) == 0
+        assert sd.__get__(self.instance1, None) == "thing"
+
 
 class TestSubTagDictionary(TestCase):
 
@@ -424,19 +436,31 @@ class TestSubTagDictionary(TestCase):
         self.instance1 = Mock(root=et, lims=self.lims)
         self.dict1 = SubTagDictionary(self.instance1, tag='test-tag')
 
+        et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <test-entry xmlns:udf="http://genologics.com/ri/userdefined">
+        </test-entry>""")
+        self.instance2 = Mock(root=et, lims=self.lims)
+        self.dict2 = SubTagDictionary(self.instance2, tag='test-tag')
+
     def test___getitem__(self):
         assert self.dict1['key1'] == 'value1'
 
     def test___setitem__(self):
-        assert len(self.dict1.rootnode(self.dict1.instance).find('test-tag')) == 1
-        assert self.dict1.rootnode(self.dict1.instance).find('test-tag').find('key1').text == 'value1'
+        assert len(self.dict1.rootnode(self.dict1.instance)) == 1
+        assert self.dict1.rootnode(self.dict1.instance).find('key1').text == 'value1'
         self.dict1['key1'] = 'value11'
-        assert len(self.dict1.rootnode(self.dict1.instance).find('test-tag')) == 1
-        assert self.dict1.rootnode(self.dict1.instance).find('test-tag').find('key1').text == 'value11'
+        assert len(self.dict1.rootnode(self.dict1.instance)) == 1
+        assert self.dict1.rootnode(self.dict1.instance).find('key1').text == 'value11'
         self.dict1['key2'] = 'value2'
-        assert len(self.dict1.rootnode(self.dict1.instance).find('test-tag')) == 2
-        assert self.dict1.rootnode(self.dict1.instance).find('test-tag').find('key2').text == 'value2'
+        assert len(self.dict1.rootnode(self.dict1.instance)) == 2
+        assert self.dict1.rootnode(self.dict1.instance).find('key2').text == 'value2'
         assert self.dict1['key2'] == 'value2'
+
+    def test___setitem__from_empty(self):
+        assert len(self.dict2.rootnode(self.dict2.instance)) == 0
+        self.dict2['key1'] = 'value1'
+        assert self.dict2.rootnode(self.dict2.instance).find('key1').text == 'value1'
+        assert len(self.dict2.rootnode(self.dict2.instance)) == 1
 
 
 class TestXmlElementAttributeDict(TestCase):
@@ -502,13 +526,14 @@ class TestXmlPooledInputDict(TestCase):
         assert len(self.dict1.rootnode(self.dict1.instance)) == 3
 
 
-class TestEntityList(TestCase):
+class TestEntityList(TestDescriptor):
 
     def setUp(self):
         et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     <test-entry>
     <artifact uri="http://testgenologics.com:4040/api/v2/artifacts/a1"></artifact>
     <artifact uri="http://testgenologics.com:4040/api/v2/artifacts/a2"></artifact>
+    <other>thing</other>
     </test-entry>
     """)
         self.lims = Lims('http://testgenologics.com:4040', username='test', password='password')
@@ -578,6 +603,15 @@ class TestEntityList(TestCase):
         assert len(el) == 2
         assert el[0] == a3
         assert el[1] == a4
+
+    def test_clear(self):
+        el = EntityList(self.instance1, 'artifact', Artifact)
+        sd = self._make_desc(StringDescriptor, 'other')
+        assert sd.__get__(self.instance1, None) == "thing"
+        assert len(el) == 2
+        el.clear()
+        assert len(el) == 0
+        assert sd.__get__(self.instance1, None) == "thing"
 
 
 class TestInputOutputMapList(TestCase):
@@ -751,7 +785,7 @@ class TestQueuedArtifactList(TestCase):
                 </location>
                 </artifact>
                 <artifact uri="{url}/artifacts/a3">
-                <queue-time>2011-12-25T01:10:10.050-00:00</queue-time>
+                <queue-time>2011-12-25T01:10:10.050-01:00</queue-time>
                 <location>
                 <container uri="{url}/containers/c1"/>
                 <value>A:3</value>
@@ -783,7 +817,7 @@ class TestQueuedArtifactList(TestCase):
         assert queued_artifacts[0] == qart
         qart = self.get_queue_art('a2', 'A:2', 200000, datetime.timedelta(0, 3600))
         assert queued_artifacts[1] == qart
-        qart = self.get_queue_art('a3', 'A:3', 50000, datetime.timedelta(0, 0))
+        qart = self.get_queue_art('a3', 'A:3', 50000, datetime.timedelta(0, -3600))
         assert queued_artifacts[2] == qart
 
     def test_set(self):
