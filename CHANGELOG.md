@@ -1,10 +1,12 @@
 Changelog for Pyclarity-Lims
 ============================
 
-0.4.3 (unreleased)
+0.4.3 (2018-02-07)
 ------------------
 
-- Nothing changed yet.
+- Add rough integration testing facility
+- Fixes parsing of time stamp in QueuedArtifactList
+- Fixes bug in clear function of muttable descriptor
 
 
 0.4.2 (2018-01-10)
