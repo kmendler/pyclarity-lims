@@ -838,6 +838,7 @@ class Step(Entity):
         """
         Send a post query to advance the step to the next step
         """
+        self.get()
         self.root = self.lims.post(
             uri="{}/advance".format(self.uri),
             data=self.lims.tostring(ElementTree.ElementTree(self.root))
