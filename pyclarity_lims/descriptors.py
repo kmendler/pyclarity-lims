@@ -48,7 +48,7 @@ class Nestable(XmlElement):
         return _rootnode
 
     def rootnode(self, instance):
-        self.rootnode_from_root(instance.root)
+        return self.rootnode_from_root(instance.root)
 
 
 class XmlMutable(XmlElement):
