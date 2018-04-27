@@ -767,7 +767,7 @@ class TestXmlAction(TestCase):
 
 class TestQueuedArtifactList(TestCase):
     def setUp(self):
-        et = ElementTree.fromstring('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        queue_txt = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
                 <test-entry>
                 <artifacts>
                 <artifact uri="{url}/artifacts/a1">
@@ -792,10 +792,52 @@ class TestQueuedArtifactList(TestCase):
                 </location>
                 </artifact>
                 </artifacts>
-                </test-entry>'''.format(url='http://testgenologics.com:4040/api/v2'))
+                </test-entry>'''
+
+
+        self.et_page1 = ElementTree.fromstring('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                                <test-entry>
+                                <artifacts>
+                                <artifact uri="{url}/artifacts/a1">
+                                <queue-time>2011-12-25T01:10:10.050+00:00</queue-time>
+                                <location>
+                                <container uri="{url}/containers/c1"/>
+                                <value>A:1</value>
+                                </location>
+                                </artifact>
+                                </artifacts>
+                                <next-page uri="{url}/queues/q1?page2=500"/>
+                                </test-entry>'''.format(url='http://testgenologics.com:4040/api/v2'))
+        self.et_page2 = ElementTree.fromstring('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                                <test-entry> 
+                                <artifacts>
+                                <artifact uri="{url}/artifacts/a2">
+                                <queue-time>2011-12-25T01:10:10.200+01:00</queue-time>
+                                <location>
+                                <container uri="{url}/containers/c1"/>
+                                <value>A:2</value>
+                                </location>
+                                </artifact>
+                                </artifacts>
+                                <next-page uri="{url}/queues/q1?page3=500"/>
+                                </test-entry>'''.format(url='http://testgenologics.com:4040/api/v2'))
+        self.et_page3 = ElementTree.fromstring('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                                <test-entry>
+                                <artifacts>
+                                <artifact uri="{url}/artifacts/a3">
+                                <queue-time>2011-12-25T01:10:10.050-01:00</queue-time>
+                                <location>
+                                <container uri="{url}/containers/c1"/>
+                                <value>A:3</value>
+                                </location>
+                                </artifact>
+                                </artifacts>
+                                </test-entry>'''.format(url='http://testgenologics.com:4040/api/v2'))
+        et = ElementTree.fromstring(queue_txt.format(url='http://testgenologics.com:4040/api/v2'))
 
         self.lims = Lims('http://testgenologics.com:4040', username='test', password='password')
         self.instance1 = Mock(root=et, lims=self.lims)
+        self.instance2 = Mock(root=self.et_page1, lims=self.lims)
 
     def get_queue_art(self, art_id, pos, microsec, time_delta):
         if version_info[0] == 2:
@@ -825,5 +867,15 @@ class TestQueuedArtifactList(TestCase):
         qart = self.get_queue_art('a1', 'A:4',  50000, datetime.timedelta(0, 0))
         with pytest.raises(NotImplementedError):
             queued_artifacts.append(qart)
+
+    def test_parse_multipage(self):
+        self.lims.get = Mock(side_effect=[self.et_page2, self.et_page3])
+        queued_artifacts = QueuedArtifactList(self.instance2)
+        qart = self.get_queue_art('a1', 'A:1', 50000, datetime.timedelta(0, 0))
+        assert queued_artifacts[0] == qart
+        qart = self.get_queue_art('a2', 'A:2', 200000, datetime.timedelta(0, 3600))
+        assert queued_artifacts[1] == qart
+        qart = self.get_queue_art('a3', 'A:3', 50000, datetime.timedelta(0, -3600))
+        assert queued_artifacts[2] == qart
 
 
