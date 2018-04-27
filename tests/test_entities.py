@@ -343,32 +343,13 @@ class TestStep(TestEntities):
             assert prog_status.message == 'Traceback Error message'
             assert prog_status.status == 'ERROR'
 
-
     def test_advance(self):
         with patch('requests.Session.get', return_value=Mock(content=self.step_xml, status_code=200)):
-            with patch('pyclarity_lims.entities.Entity.get'):
-                with pytest.raises(AttributeError):
-                    s = Step(self.lims, id='s1')
-                    s.advance()
             with patch('pyclarity_lims.lims.requests.post', return_value=Mock(content=self.step_xml, status_code=201)) as patch_post:
                 s = Step(self.lims, id='s1')
                 s.advance()
-                data = '''<?xml version='1.0' encoding='utf-8'?>
-                        <stp:step xmlns:stp="http://genologics.com/ri/step" current-state="Completed" limsid="s1" uri="http://testgenologics.com:4040/api/v2/steps/s1">
-                        <configuration uri="http://testgenologics.com:4040/api/v2/configuration/protocols/p1/steps/p1s1">My fancy protocol</configuration>
-                        <date-started>2016-11-22T10:43:32.857+00:00</date-started>
-                        <date-completed>2016-11-22T14:31:14.100+00:00</date-completed>
-                        <actions uri="http://testgenologics.com:4040/api/v2/steps/s1/actions"/>
-                        <placements uri="http://testgenologics.com:4040/api/v2/steps/s1/placements"/>
-                        <program-status uri="http://testgenologics.com:4040/api/v2/steps/s1/programstatus"/>
-                        <details uri="http://testgenologics.com:4040/api/v2/steps/s1/details"/>
-                        <available-programs>
-                        <available-program name="program1" uri="http://testgenologics.com:4040/api/v2/steps/s1/trigger/t1"/>
-                        <available-program name="program2" uri="http://testgenologics.com:4040/api/v2/steps/s1/trigger/t2"/>
-                        </available-programs>
-                        </stp:step>'''
+                assert elements_equal(ElementTree.fromstring(patch_post.call_args_list[0][1]['data']), ElementTree.fromstring(self.step_xml))
 
-                assert elements_equal(ElementTree.fromstring(patch_post.call_args_list[0][1]['data']), ElementTree.fromstring(data))
 
 class TestArtifacts(TestEntities):
     root_artifact_xml = generic_artifact_xml.format(url=url)
