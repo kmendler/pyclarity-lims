@@ -1,12 +1,10 @@
 from sys import version_info
 from unittest import TestCase
 from xml.etree import ElementTree
-
 from pyclarity_lims.entities import ProtocolStep, StepActions, Researcher, Artifact, \
     Step, StepPlacements, Container, Stage, ReagentKit, ReagentLot, Sample, Project
 from pyclarity_lims.lims import Lims
 from tests import NamedMock, elements_equal
-import pytest
 if version_info[0] == 2:
     from mock import patch, Mock
 else:
