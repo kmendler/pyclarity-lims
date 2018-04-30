@@ -1,12 +1,10 @@
 from sys import version_info
 from unittest import TestCase
 from xml.etree import ElementTree
-
 from pyclarity_lims.entities import ProtocolStep, StepActions, Researcher, Artifact, \
     Step, StepPlacements, Container, Stage, ReagentKit, ReagentLot, Sample, Project
 from pyclarity_lims.lims import Lims
 from tests import NamedMock, elements_equal
-
 if version_info[0] == 2:
     from mock import patch, Mock
 else:
@@ -342,6 +340,13 @@ class TestStep(TestEntities):
             prog_status = s.trigger_program('program1')
             assert prog_status.message == 'Traceback Error message'
             assert prog_status.status == 'ERROR'
+
+    def test_advance(self):
+        with patch('requests.Session.get', return_value=Mock(content=self.step_xml, status_code=200)):
+            with patch('pyclarity_lims.lims.requests.post', return_value=Mock(content=self.step_xml, status_code=201)) as patch_post:
+                s = Step(self.lims, id='s1')
+                s.advance()
+                assert elements_equal(ElementTree.fromstring(patch_post.call_args_list[0][1]['data']), ElementTree.fromstring(self.step_xml))
 
 
 class TestArtifacts(TestEntities):
