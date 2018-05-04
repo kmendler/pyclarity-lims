@@ -13,7 +13,6 @@ else:
     from urllib.parse import urljoin
     from urllib.parse import urlencode
 
-
 from .entities import *
 
 __all__ = ['Lab', 'Researcher', 'Project', 'Sample', 'Containertype', 'Container', 'Processtype', 'Process',
@@ -22,7 +21,7 @@ __all__ = ['Lab', 'Researcher', 'Project', 'Sample', 'Containertype', 'Container
 # Python 2.6 support work-arounds
 # - Exception ElementTree.ParseError does not exist
 # - ElementTree.ElementTree.write does not take arg. xml_declaration
-if version_info[:2] < (2,7):
+if version_info[:2] < (2, 7):
     from xml.parsers import expat
     ElementTree.ParseError = expat.ExpatError
     p26_write = ElementTree.ElementTree.write
@@ -71,7 +70,6 @@ class Lims(object):
 
         :param segments: arguments creating the uri
         :param query: kwargs creating the query
-
         """
         segments = ['api', self.VERSION] + list(segments)
         url = urljoin(self.baseuri, '/'.join(segments))
@@ -85,9 +83,7 @@ class Lims(object):
 
         :param uri: the uri to query
         :param params: dict containing the query parameters
-
-        :return the text of response as an ElementTree
-
+        :return: the text of the response as an ElementTree
         """
         try:
             r = self.request_session.get(uri, params=params,
@@ -195,7 +191,7 @@ class Lims(object):
                 node = root.find('message')
                 if node is None:
                     response.raise_for_status()
-                    message = "%s" % (response.status_code)
+                    message = "%s" % response.status_code
                 else:
                     message = "%s: %s" % (response.status_code, node.text)
                 node = root.find('suggested-actions')
@@ -236,7 +232,7 @@ class Lims(object):
         """
         Get a list of reagent types, filtered by keyword arguments.
 
-        :param name: Reagent type  name, or list of names.
+        :param name: Reagent type name, or list of names.
         :param start_index: Page to retrieve; all if None.
         """
         params = self._get_params(name=name,
@@ -458,9 +454,6 @@ class Lims(object):
         :param techlastname: Last name of researcher, or list of.
         :param projectname: Name of project, or list of.
         :param start_index: Page to retrieve; all if None.
-        :param add_info: Change the return type to a tuple where the first element is normal return and
-                         the second is a dict of additional information provided in the query.
-
         """
         params = self._get_params(last_modified=last_modified,
                                   type=type,
@@ -635,6 +628,7 @@ class Lims(object):
     def put_batch(self, instances):
         """
         Update multiple instances using a single batch request.
+
         :param instances: List of instances children of Entity
         """
 

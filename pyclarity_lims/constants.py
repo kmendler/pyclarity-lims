@@ -48,7 +48,7 @@ _NSPATTERN = re.compile(r'(\{)(.+?)(\})')
 
 
 def nsmap(tag):
-    "Convert from normal XML-ish namespace tag to ElementTree variant."
+    """Convert from normal XML-ish namespace tag to ElementTree variant."""
     parts = tag.split(':')
     if len(parts) != 2:
         raise ValueError("no namespace specifier in tag")

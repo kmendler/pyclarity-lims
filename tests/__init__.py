@@ -16,7 +16,7 @@ class NamedMock(Mock):
 
 def elements_equal(e1, e2):
     if e1.tag != e2.tag:
-        print('Tag: %s != %s'%(e1.tag, e2.tag))
+        print('Tag: %s != %s' % (e1.tag, e2.tag))
         return False
     if e1.text and e2.text and e1.text.strip() != e2.text.strip():
         print('Text: %s != %s' % (e1.text.strip(), e2.text.strip()))

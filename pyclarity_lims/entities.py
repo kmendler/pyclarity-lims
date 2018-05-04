@@ -183,16 +183,18 @@ class Researcher(Entity):
         return "%s %s" % (self.first_name, self.last_name)
 
 
-class ReagentLabel(Entity):
+class Reagent_label(Entity):
     """Reagent label element"""
 
     reagent_label = StringDescriptor('reagent-label')
+    """The reagent label"""
 
 
 class Note(Entity):
     """Note attached to a project or a sample."""
 
     content = StringDescriptor(None)  # root element
+    """The content of the note"""
 
 
 class File(Entity):
@@ -293,7 +295,7 @@ class Containertype(Entity):
     name = StringAttributeDescriptor('name')
     """Name of the type of container (Tube, 96 well plates, ...)"""
     calibrant_wells = StringListDescriptor(tag='calibrant-well')
-    """If there are any well on this container that are use for calibration. They would be defined here."""
+    """If there are any wells on this container that are use for calibration. They would be defined here."""
     unavailable_wells = StringListDescriptor(tag='unavailable-well')
     """If there are any well on this container that should not be used. They would be defined here."""
     x_dimension = DimensionDescriptor('x-dimension')
@@ -303,7 +305,7 @@ class Containertype(Entity):
 
 
 class Container(Entity):
-    """"Container for analyte artifacts."""
+    """Container for analyte artifacts."""
 
     _URI = 'containers'
     _PREFIX = 'con'
@@ -321,7 +323,7 @@ class Container(Entity):
     udt = UdtDictionaryDescriptor()
     """Dictionary of UDTs associated with the container."""
     state = StringDescriptor('state')
-    """State of the container. i.e. Populated"""
+    """State of the container. e.g. Populated"""
 
     def get_placements(self):
         """Get the dictionary of locations and artifacts
@@ -416,12 +418,12 @@ class Process(Entity):
     # process_parameters XXX
 
     def outputs_per_input(self, inart, ResultFile=False, SharedResultFile=False, Analyte=False):
-        """Getting all the output artifacts related to a particual input artifact
+        """Getting all the output artifacts related to a particular input artifact
 
         :param inart: input artifact id use to select the output
-        :param ResultFile: boolean specifying to only return ResultFile.
-        :param SharedResultFile: boolean specifying to only return SharedResultFile.
-        :param Analyte: boolean specifying to only return Analyte.
+        :param ResultFile: boolean specifying to only return ResultFiles.
+        :param SharedResultFile: boolean specifying to only return SharedResultFiles.
+        :param Analyte: boolean specifying to only return Analytes.
         :return: output artifact corresponding to the input artifact provided
         """
         inouts = [io for io in self.input_output_maps if io[0]['limsid'] == inart]
@@ -436,6 +438,7 @@ class Process(Entity):
 
     def input_per_sample(self, sample):
         """Getting all the input artifacts derived from the specified sample
+
         :param sample: the sample name to check against
         :return: list of input artifacts matching the sample name
 
@@ -474,7 +477,7 @@ class Process(Entity):
         If unique is true, no duplicates are returned.
 
         :param unique: boolean specifying if the list of artifacts should be uniqued
-        :param resolve: boolean specifying if the artifacts entities should be resolved through a batch query.
+        :param resolve: boolean specifying if the artifact entities should be resolved through a batch query.
         :return: list of output artifacts.
 
         """
@@ -645,7 +648,7 @@ class ReagentLot(Entity):
     """Information about a particular regaent lot used in a step"""
     _URI = "reagentlots"
     _TAG = "reagent-lot"
-    _PREFIX = 'lot'
+    _PREFIX = "lot"
 
     reagent_kit = EntityDescriptor('reagent-kit', ReagentKit)
     """:py:class:`Reagent kit <pyclarity_lims.entities.ReagentKit>` associated with this lot."""
@@ -905,9 +908,10 @@ class Step(Entity):
         """
         Create a new instance of a Step. This method will start a step from queued artifacts.
 
+        :param lims: Lims connection object
         :param protocol_step: the :py:class:`ProtocolStep <pyclarity_lims.entities.ProtocolStep>` specifying the step to start.
         :param inputs: A list of :py:class:`artifacts <pyclarity_lims.entities.Artifact>` as input to the step.
-                       These needs to be queued for that step for the query to be successful.
+                       These need to be queued for that step for the query to be successful.
         :param container_type_name: optional name of the type of container that this step use for its output.
                                     if omitted it uses the required type from the ProtocolStep if there is only one.
         :param reagent_category: optional reagent_category.
