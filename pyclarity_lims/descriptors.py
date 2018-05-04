@@ -449,7 +449,11 @@ class XmlList(XmlMutable, list):
         self._update_elems()
         return list.__add__(self, [self._modify_value_before_insert(v, len(self) + i) for i, v in enumerate(other_list)])
 
-    __iadd__ = __add__
+    def __iadd__(self, other_list):
+        for item in other_list:
+            self._additem(item)
+        self._update_elems()
+        return list.__iadd__(self, [self._modify_value_before_insert(v, len(self) + i) for i, v in enumerate(other_list)])
 
     def __setitem__(self, i, item):
         if isinstance(i, slice):

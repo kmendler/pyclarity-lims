@@ -563,7 +563,7 @@ class Artifact(Entity):
     files = EntityListDescriptor(nsmap('file:file'), File)
     """List of :py:class:`files <pyclarity_lims.entities.File>` associated with the artifact."""
     reagent_labels = ReagentLabelList()
-    """List of :py:class:`Reagent labels <pyclarity_lims.entities.ReagentLabel>` associated with the artifact."""
+    """List of :py:class:`Reagent labels <pyclarity_lims.entities.Reagent_label>` associated with the artifact."""
     workflow_stages = None  # See bottom of the file
     """List of workflow stage :py:class:`Steps <pyclarity_lims.entities.Step>` that this artifact ran through."""
 
@@ -898,10 +898,10 @@ class Step(Entity):
             - C is a string specifying the location in the container such as "1:1"
 
         """
-        self.placement = StepPlacements(self.lims, uri=self.uri + '/placements')
-        self.placement.selected_containers = output_containers
-        self.placement.placement_list = output_placement_list
-        self.placement.root = self.placement.post()
+        self.placements = StepPlacements(self.lims, uri=self.uri + '/placements')
+        self.placements.selected_containers = output_containers
+        self.placements.placement_list = output_placement_list
+        self.placements.root = self.placements.post()
 
     @classmethod
     def create(cls, lims, protocol_step, inputs, container_type_name=None, reagent_category=None, replicates=1, **kwargs):

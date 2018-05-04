@@ -619,11 +619,14 @@ class TestEntityList(TestDescriptor):
 
     def test__iadd__(self):
         el1 = EntityList(self.instance1, 'artifact', Artifact)
+        id1 = id(el1)
         assert len(el1) == 2
         assert len(el1.instance.root.findall('artifact')) == 2
         el2 = [Artifact(self.lims, id='a3'), Artifact(self.lims, id='a4')]
 
         el1 += el2
+        id2 = id(el1)
+        assert id1 == id2  # still the same object
         assert len(el1) == 4
         assert el1[2:] == el2
 
