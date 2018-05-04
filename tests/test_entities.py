@@ -339,6 +339,42 @@ class TestStep(TestEntities):
                 s.advance()
                 assert elements_equal(ElementTree.fromstring(patch_post.call_args_list[0][1]['data']), ElementTree.fromstring(self.step_xml))
 
+    def test_set_placements(self):
+        basic_step_xml = """<?xml version='1.0' encoding='utf-8'?>
+<stp:step xmlns:stp="http://genologics.com/ri/step" current-state="Completed" limsid="{stepid}" uri="{url}/api/v2/steps/{stepid}">
+<configuration uri="{url}/api/v2/configuration/protocols/p1/steps/p1s1">My fancy protocol</configuration>
+</stp:step>""".format(url=url, stepid='s1')
+        a1 = Artifact(uri='http://testgenologics.com:4040/artifacts/a1', lims=self.lims)
+        a2 = Artifact(uri='http://testgenologics.com:4040/artifacts/a2', lims=self.lims)
+        c1 = Container(uri='http://testgenologics.com:4040/containers/c1', lims=self.lims)
+
+        with patch('requests.Session.get', return_value=Mock(content=basic_step_xml, status_code=200)):
+            s = Step(self.lims, id='s1')
+            s.get()
+            assert s.placements is None
+        placement_xml = '''<?xml version='1.0' encoding='utf-8'?>
+        <stp:placements xmlns:stp="http://genologics.com/ri/step">
+        <selected-containers><container uri="http://testgenologics.com:4040/containers/c1" /></selected-containers>
+        <output-placements>
+        <output-placement uri="http://testgenologics.com:4040/artifacts/a1">
+        <location><container limsid="c1" uri="http://testgenologics.com:4040/containers/c1" /><value>3:1</value></location>
+        </output-placement>
+        <output-placement uri="http://testgenologics.com:4040/artifacts/a2">
+        <location><container limsid="c1" uri="http://testgenologics.com:4040/containers/c1" /><value>4:1</value></location>
+        </output-placement>
+        </output-placements>
+        </stp:placements>
+        '''
+        with patch('pyclarity_lims.lims.requests.post', return_value=Mock(content=placement_xml, status_code=201)) as patch_post:
+            s.set_placements([c1], [(a1, (c1, '3:1')), (a2, (c1, '4:1'))])
+
+            assert elements_equal(
+                ElementTree.fromstring(patch_post.call_args_list[0][1]['data']),
+                ElementTree.fromstring(placement_xml)
+            )
+            assert s.placements.selected_containers == [c1]
+            assert s.placements.placement_list == [(a1, (c1, '3:1')), (a2, (c1, '4:1'))]
+
 
 class TestArtifacts(TestEntities):
     root_artifact_xml = generic_artifact_xml.format(url=url)

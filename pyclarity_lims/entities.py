@@ -123,6 +123,7 @@ class Entity(object):
         data = lims.tostring(ElementTree.ElementTree(instance.root))
         instance.root = lims.post(uri=lims.get_uri(cls._URI), data=data)
         instance._uri = instance.root.attrib['uri']
+        lims.cache[instance.uri] = instance
         return instance
 
 
@@ -282,6 +283,7 @@ class Sample(Entity):
         data = lims.tostring(ElementTree.ElementTree(instance.root))
         instance.root = lims.post(uri=lims.get_uri(cls._URI), data=data)
         instance._uri = instance.root.attrib['uri']
+        lims.cache[instance.uri] = instance
         return instance
 
 
@@ -675,6 +677,9 @@ class ReagentLot(Entity):
 class StepPlacements(Entity):
     """Placements from within a step. Supports POST"""
 
+    _PREFIX = 'stp'
+    _TAG = 'placements'
+
     selected_containers = EntityListDescriptor(tag='container', klass=Container, nesting=['selected-containers'])
     """List of :py:class:`containers <pyclarity_lims.entities.Container>`"""
     _placement_list = OutputPlacementListDescriptor()
@@ -697,6 +702,18 @@ class StepPlacements(Entity):
 
     def get_selected_containers(self):
         return self.selected_containers
+
+    @classmethod
+    def create(cls, lims, step, output_containers, output_placement_list, **kwargs):
+        """Create an instance from attributes then post it to the LIMS"""
+        instance = super(StepPlacements, cls)._create(lims, **kwargs)
+        instance._uri = step.uri + '/placements'
+        instance.selected_containers = output_containers
+        instance.placement_list = output_placement_list
+        data = lims.tostring(ElementTree.ElementTree(instance.root))
+        instance.root = lims.post(uri=instance.uri, data=data)
+        lims.cache[instance.uri] = instance
+        return instance
 
 
 class StepActions(Entity):
@@ -898,10 +915,7 @@ class Step(Entity):
             - C is a string specifying the location in the container such as "1:1"
 
         """
-        self.placements = StepPlacements(self.lims, uri=self.uri + '/placements')
-        self.placements.selected_containers = output_containers
-        self.placements.placement_list = output_placement_list
-        self.placements.root = self.placements.post()
+        self.placements = StepPlacements.create(self.lims, self, output_containers, output_placement_list)
 
     @classmethod
     def create(cls, lims, protocol_step, inputs, container_type_name=None, reagent_category=None, replicates=1, **kwargs):
@@ -918,7 +932,7 @@ class Step(Entity):
         :param replicates: int or list of ints specifying the number of replicates for each inputs.
         """
         instance = super(Step, cls)._create(lims, **kwargs)
-        # Check configuratio of the step
+        # Check configuration of the step
         if not isinstance(protocol_step, ProtocolStep):
             raise TypeError('protocol_step must be of type ProtocolStep not %s.' % type(protocol_step))
         configuration_node = ElementTree.SubElement(instance.root, 'configuration')
@@ -955,6 +969,7 @@ class Step(Entity):
         data = lims.tostring(ElementTree.ElementTree(instance.root))
         instance.root = lims.post(uri=lims.get_uri(cls._URI), data=data)
         instance._uri = instance.root.attrib['uri']
+        lims.cache[instance.uri] = instance
         return instance
 
 
