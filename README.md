@@ -7,9 +7,9 @@
 [![Coverage Status](https://coveralls.io/repos/github/EdinburghGenomics/pyclarity-lims/badge.svg)](https://coveralls.io/github/EdinburghGenomics/pyclarity-lims)
 
 
-Pyclarity-lims is a fork of [genologics](https://github.com/SciLifeLab/genologics) that we extended and modified.
-Most of the initial logic still applies and genologics module still exist in pyclarity-lims for backward compatibility.
-However there are a few backward incompatible changes that had to be made.
+Pyclarity-lims is a fork of [genologics](https://github.com/SciLifeLab/genologics) that we have extended and modified.
+Most of the initial logic still applies and the `genologics` module still exists as an alias for backward compatibility.
+However there are a few backward incompatible changes that have had to be made.
 
 ## Documentation
 

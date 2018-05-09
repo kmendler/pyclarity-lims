@@ -32,17 +32,14 @@ import pyclarity_lims
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc',
-    'sphinx.ext.doctest',
-    'sphinx.ext.coverage',
-    'sphinx.ext.imgmath',
-    'sphinx.ext.viewcode']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.coverage',
+              'sphinx.ext.imgmath', 'sphinx.ext.viewcode']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
 # The suffix(es) of source filenames.
-# You can specify multiple suffix as a list of string:
+# You can specify multiple suffixes as a list of strings:
 #
 # source_suffix = ['.rst', '.md']
 source_suffix = '.rst'
@@ -74,13 +71,13 @@ language = "en"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-# This patterns also effect to html_static_path and html_extra_path
+# These patterns also affect html_static_path and html_extra_path
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 
-# If true, `todo` and `todoList` produce output, else they produce nothing.
+# If true, `todo` and `todoList` produce outputs, else they produce nothing.
 todo_include_todos = False
 
 
@@ -166,4 +163,4 @@ texinfo_documents = [
 
 
 # -- Options for side bar ----------------------------------------------------
-html_sidebars = { '**': ['about.html', 'navigation.html', 'relations.html', 'searchbox.html'], }
+html_sidebars = {'**': ['about.html', 'navigation.html', 'relations.html', 'searchbox.html']}

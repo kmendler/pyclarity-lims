@@ -9,7 +9,6 @@ else:
 
 
 class NamedMock(Mock):
-
     @property
     def name(self):
         return self.real_name
@@ -17,7 +16,7 @@ class NamedMock(Mock):
 
 def elements_equal(e1, e2):
     if e1.tag != e2.tag:
-        print('Tag: %s != %s'%(e1.tag, e2.tag))
+        print('Tag: %s != %s' % (e1.tag, e2.tag))
         return False
     if e1.text and e2.text and e1.text.strip() != e2.text.strip():
         print('Text: %s != %s' % (e1.text.strip(), e2.text.strip()))
@@ -33,9 +32,9 @@ def elements_equal(e1, e2):
         return False
     return all(elements_equal(c1, c2) for c1, c2 in zip(sorted(e1, key=lambda x: x.tag), sorted(e2, key=lambda x: x.tag)))
 
+
 def print_etree(etree):
     import sys
     outfile = BytesIO()
     ElementTree.ElementTree(etree).write(outfile, encoding='utf-8', xml_declaration=True)
     sys.stdout.buffer.write(outfile.getvalue())
-

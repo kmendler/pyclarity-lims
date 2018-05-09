@@ -1,7 +1,3 @@
-__all__ = ['Lab', 'Researcher', 'Project', 'Sample',
-           'Containertype', 'Container', 'Processtype', 'Process',
-           'Artifact', 'Lims']
-
 import os
 import re
 from io import BytesIO
@@ -17,18 +13,21 @@ else:
     from urllib.parse import urljoin
     from urllib.parse import urlencode
 
-
 from .entities import *
+
+__all__ = ['Lab', 'Researcher', 'Project', 'Sample', 'Containertype', 'Container', 'Processtype', 'Process',
+           'Artifact', 'Lims']
 
 # Python 2.6 support work-arounds
 # - Exception ElementTree.ParseError does not exist
 # - ElementTree.ElementTree.write does not take arg. xml_declaration
-if version_info[:2] < (2,7):
+if version_info[:2] < (2, 7):
     from xml.parsers import expat
     ElementTree.ParseError = expat.ExpatError
     p26_write = ElementTree.ElementTree.write
+
     def write_with_xml_declaration(self, file, encoding, xml_declaration):
-        assert xml_declaration is True # Support our use case only 
+        assert xml_declaration is True  # Support our use case only
         file.write("<?xml version='1.0' encoding='utf-8'?>\n")
         p26_write(self, file, encoding=encoding)
     ElementTree.ElementTree.write = write_with_xml_declaration
@@ -54,7 +53,6 @@ class Lims(object):
     VERSION = 'v2'
 
     def __init__(self, baseuri, username, password, version=VERSION):
-
         self.baseuri = baseuri.rstrip('/') + '/'
         self.username = username
         self.password = password
@@ -72,7 +70,6 @@ class Lims(object):
 
         :param segments: arguments creating the uri
         :param query: kwargs creating the query
-
         """
         segments = ['api', self.VERSION] + list(segments)
         url = urljoin(self.baseuri, '/'.join(segments))
@@ -86,9 +83,7 @@ class Lims(object):
 
         :param uri: the uri to query
         :param params: dict containing the query parameters
-
-        :return the text of response as an ElementTree
-
+        :return: the text of the response as an ElementTree
         """
         try:
             r = self.request_session.get(uri, params=params,
@@ -97,7 +92,6 @@ class Lims(object):
                                          timeout=TIMEOUT)
         except requests.exceptions.ConnectionError as e:
             raise type(e)("{0}, Error trying to reach {1}".format(e.message, uri))
-
         else:
             return self.parse_response(r)
 
@@ -131,14 +125,14 @@ class Lims(object):
         s = ElementTree.SubElement(root, 'original-location')
         s.text = file_to_upload
         root = self.post(
-                uri=self.get_uri('glsstorage'),
-                data=self.tostring(ElementTree.ElementTree(root))
+            uri=self.get_uri('glsstorage'),
+            data=self.tostring(ElementTree.ElementTree(root))
         )
 
         # Create the file object
         root = self.post(
-                uri=self.get_uri('files'),
-                data=self.tostring(ElementTree.ElementTree(root))
+            uri=self.get_uri('files'),
+            data=self.tostring(ElementTree.ElementTree(root))
         )
         file = File(self, uri=root.attrib['uri'])
 
@@ -182,7 +176,8 @@ class Lims(object):
         tag = nsmap('ver:versions')
         assert tag == root.tag
         for node in root.findall('version'):
-            if node.attrib['major'] == self.VERSION: return
+            if node.attrib['major'] == self.VERSION:
+                return
         raise ValueError('version mismatch')
 
     def validate_response(self, response, accept_status_codes=[200]):
@@ -196,7 +191,7 @@ class Lims(object):
                 node = root.find('message')
                 if node is None:
                     response.raise_for_status()
-                    message = "%s" % (response.status_code)
+                    message = "%s" % response.status_code
                 else:
                     message = "%s: %s" % (response.status_code, node.text)
                 node = root.find('suggested-actions')
@@ -226,7 +221,6 @@ class Lims(object):
         :param start_index: Page to retrieve; all if None.
         :param add_info: Change the return type to a tuple where the first element is normal return and
                          the second is a dict of additional information provided in the query.
-
         """
         params = self._get_params(name=name,
                                   attach_to_name=attach_to_name,
@@ -238,9 +232,8 @@ class Lims(object):
         """
         Get a list of reagent types, filtered by keyword arguments.
 
-        :param name: Reagent type  name, or list of names.
+        :param name: Reagent type name, or list of names.
         :param start_index: Page to retrieve; all if None.
-
         """
         params = self._get_params(name=name,
                                   start_index=start_index)
@@ -259,7 +252,6 @@ class Lims(object):
         :param start_index: Page to retrieve; all if None.
         :param add_info: Change the return type to a tuple where the first element is normal return and
                          the second is a dict of additional information provided in the query.
-
         """
         params = self._get_params(name=name,
                                   last_modified=last_modified,
@@ -462,9 +454,6 @@ class Lims(object):
         :param techlastname: Last name of researcher, or list of.
         :param projectname: Name of project, or list of.
         :param start_index: Page to retrieve; all if None.
-        :param add_info: Change the return type to a tuple where the first element is normal return and
-                         the second is a dict of additional information provided in the query.
-
         """
         params = self._get_params(last_modified=last_modified,
                                   type=type,
@@ -478,7 +467,7 @@ class Lims(object):
 
     def get_workflows(self, name=None, add_info=False):
         """
-        Get the list of existing workflows on the system.
+        Get a list of existing workflows on the system.
 
         :param name: The name of the workflow you're looking for
         :param add_info: Change the return type to a tuple where the first element is normal return and
@@ -514,7 +503,7 @@ class Lims(object):
 
     def get_protocols(self, name=None, add_info=False):
         """
-        Get the list of existing protocols on the system.
+        Get a list of existing protocols on the system.
 
         :param name: The name the protocol
         :param add_info: Change the return type to a tuple where the first element is normal return and
@@ -552,15 +541,16 @@ class Lims(object):
         return self._get_instances(ReagentLot, params=params)
 
     def _get_params(self, **kwargs):
-        "Convert keyword arguments to a kwargs dictionary."
+        """Convert keyword arguments to a kwargs dictionary."""
         result = dict()
         for key, value in kwargs.items():
-            if value is None: continue
+            if value is None:
+                continue
             result[key.replace('_', '-')] = value
         return result
 
     def _get_params_udf(self, udf=dict(), udtname=None, udt=dict()):
-        "Convert UDF-ish arguments to a params dictionary."
+        """Convert UDF-ish arguments to a params dictionary."""
         result = dict()
         for key, value in udf.items():
             result["udf.%s" % key] = value
@@ -587,7 +577,8 @@ class Lims(object):
                     info_dict[subnode.tag] = subnode.text
                 additionnal_info_dicts.append(info_dict)
             node = root.find('next-page')
-            if node is None: break
+            if node is None:
+                break
             root = self.get(node.attrib['uri'], params=params)
         if add_info:
             return results, additionnal_info_dicts
@@ -639,7 +630,6 @@ class Lims(object):
         Update multiple instances using a single batch request.
 
         :param instances: List of instances children of Entity
-
         """
 
         if not instances:
@@ -653,24 +643,23 @@ class Lims(object):
                 # Tag is art:details, con:details, etc.
                 example_root = instance.root
                 ns_uri = re.match("{(.*)}.*", example_root.tag).group(1)
-                root = ElementTree.Element("{%s}details" % (ns_uri))
+                root = ElementTree.Element("{%s}details" % ns_uri)
 
             root.append(instance.root)
 
         uri = self.get_uri(klass._URI, 'batch/update')
         data = self.tostring(ElementTree.ElementTree(root))
-        root = self.post(uri, data)
+        self.post(uri, data)
 
     def route_artifacts(self, artifact_list, workflow_uri=None, stage_uri=None, unassign=False):
         """
-        Take a list of artifact and queue them to the stage specified by the stage uri. if a workflow uri is specified,
+        Take a list of artifacts and queue them to the stage specified by the stage uri. If a workflow uri is specified,
         the artifacts will be queued to the first stage of the workflow.
 
-        :param artifact_list: list of Artifact.
+        :param artifact_list: list of Artifacts.
         :param workflow_uri: The uri of the workflow.
         :param stage_uri: The uri of the stage.
         :param unassign: If True, then the artifact will be removed from the queue instead of added.
-
         """
         root = ElementTree.Element(nsmap('rt:routing'))
         if unassign:

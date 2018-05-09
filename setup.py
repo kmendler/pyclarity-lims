@@ -2,14 +2,14 @@ from os.path import join, abspath, dirname
 from setuptools import setup, find_packages
 
 
-
 requirements_txt = join(abspath(dirname(__file__)), 'requirements.txt')
 requirements = [l.strip() for l in open(requirements_txt) if l and not l.startswith('#')]
 
 version = '0.4.4.dev0'
 
 
-setup(name='pyclarity_lims',
+setup(
+    name='pyclarity_lims',
     version=version,
     description="Python interface to the Basespace-Clarity LIMS (Laboratory Information Management System) "
                 "server via its REST API.",
@@ -39,11 +39,8 @@ setup(name='pyclarity_lims',
     maintainer_email='timothee.cezard@ed.ac.uk',
     url='https://github.com/EdinburghGenomics/pyclarity-lims',
     license='GPLv3',
-    packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
+    packages=find_packages(exclude=['ez_setup', 'examples', 'tests', 'integration_tests']),
     include_package_data=True,
     zip_safe=False,
-    install_requires=[
-      "requests"
-    ],
-
+    install_requires=['requests']
 )
