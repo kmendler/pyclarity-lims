@@ -1,12 +1,10 @@
 from sys import version_info
 from unittest import TestCase
 from xml.etree import ElementTree
-
 from pyclarity_lims.entities import ProtocolStep, StepActions, Researcher, Artifact, \
     Step, StepPlacements, Container, Stage, ReagentKit, ReagentLot, Sample, Project
 from pyclarity_lims.lims import Lims
 from tests import NamedMock, elements_equal
-
 if version_info[0] == 2:
     from mock import patch, Mock
 else:
@@ -165,12 +163,6 @@ generic_sample_creation_xml = """
 </smp:samplecreation>
 """
 
-class TestEntities(TestCase):
-    def test_pass(self):
-        pass
-
-
-
 
 class TestEntities(TestCase):
     dummy_xml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -210,7 +202,6 @@ class TestStepActions(TestEntities):
             step2 = Step(self.lims, uri='http://testgenologics.com:4040/steps/s2')
             artifact = Artifact(self.lims, uri='http://testgenologics.com:4040/artifacts/a1')
 
-
             expected_next_actions = [{'artifact': artifact, 'action': 'requeue',
                                       'step': step1, 'rework-step': step2}]
             assert s.next_actions == expected_next_actions
@@ -235,7 +226,6 @@ class TestStepPlacements(TestEntities):
         a1 = Artifact(uri='http://testgenologics.com:4040/artifacts/a1', lims=self.lims)
         a2 = Artifact(uri='http://testgenologics.com:4040/artifacts/a2', lims=self.lims)
         c1 = Container(uri='http://testgenologics.com:4040/containers/c1', lims=self.lims)
-        c2 = Container(uri='http://testgenologics.com:4040/containers/c2', lims=self.lims)
 
         s = StepPlacements(uri=self.lims.get_uri('steps', 's1', 'placements'), lims=self.lims)
         with patch('requests.Session.get',
@@ -318,7 +308,6 @@ class TestStep(TestEntities):
             '''
             assert elements_equal(ElementTree.fromstring(patch_post.call_args_list[0][1]['data']), ElementTree.fromstring(data))
 
-
     def test_parse_entity(self):
         with patch('requests.Session.get', return_value=Mock(content=self.step_xml, status_code=200)):
             s = Step(self.lims, id='s1')
@@ -338,10 +327,17 @@ class TestStep(TestEntities):
             s = Step(self.lims, id='s1')
             s.get()
         with patch('pyclarity_lims.lims.requests.post',
-                   return_value=Mock(content=self.step_prog_status, status_code=201)) as patch_post:
+                   return_value=Mock(content=self.step_prog_status, status_code=201)):
             prog_status = s.trigger_program('program1')
             assert prog_status.message == 'Traceback Error message'
             assert prog_status.status == 'ERROR'
+
+    def test_advance(self):
+        with patch('requests.Session.get', return_value=Mock(content=self.step_xml, status_code=200)):
+            with patch('pyclarity_lims.lims.requests.post', return_value=Mock(content=self.step_xml, status_code=201)) as patch_post:
+                s = Step(self.lims, id='s1')
+                s.advance()
+                assert elements_equal(ElementTree.fromstring(patch_post.call_args_list[0][1]['data']), ElementTree.fromstring(self.step_xml))
 
 
 class TestArtifacts(TestEntities):
@@ -372,12 +368,12 @@ class TestReagentKits(TestEntities):
             assert r.name == 'regaentkitname'
             assert r.supplier == 'reagentProvider'
             assert r.website == 'www.reagentprovider.com'
-            assert r.archived == False
+            assert r.archived is False
 
     def test_create_entity(self):
         with patch('pyclarity_lims.lims.requests.post', return_value=Mock(content=self.reagentkit_xml, status_code=201)):
-            r = ReagentKit.create(self.lims, name='regaentkitname', supplier='reagentProvider',
-                                  website='www.reagentprovider.com', archived=False)
+            ReagentKit.create(self.lims, name='regaentkitname', supplier='reagentProvider',
+                              website='www.reagentprovider.com', archived=False)
         self.assertRaises(TypeError, ReagentKit.create, self.lims, error='test')
 
 
@@ -397,7 +393,7 @@ class TestReagentLots(TestEntities):
         with patch('requests.Session.get', return_value=Mock(content=self.reagentkit_xml, status_code=200)):
             r = ReagentKit(uri=self.lims.get_uri('reagentkits', 'r1'), lims=self.lims)
         with patch('pyclarity_lims.lims.requests.post',
-                   return_value=Mock(content=self.reagentlot_xml, status_code=201)) as patch_post:
+                   return_value=Mock(content=self.reagentlot_xml, status_code=201)):
             l = ReagentLot.create(
                     self.lims,
                     reagent_kit=r,
@@ -417,7 +413,7 @@ class TestSample(TestEntities):
     def test_create_entity(self):
         with patch('pyclarity_lims.lims.requests.post',
                    return_value=Mock(content=self.sample_creation, status_code=201)) as patch_post:
-            l = Sample.create(
+            Sample.create(
                 self.lims,
                 project=Project(self.lims, uri='project'),
                 container=Container(self.lims, uri='container'),

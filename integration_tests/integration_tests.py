@@ -1,8 +1,7 @@
-import sys
-from argparse import ArgumentParser
-
 import os
+import sys
 import yaml
+from argparse import ArgumentParser
 from pyclarity_lims.lims import Lims
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

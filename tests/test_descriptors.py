@@ -191,8 +191,6 @@ class TestStringAttributeDescriptor(TestDescriptor):
         assert instance_new.root.attrib['name'] == "test name2"
 
 
-
-
 class TestStringListDescriptor(TestDescriptor):
     def setUp(self):
         et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -348,7 +346,7 @@ class TestUdfDictionary(TestCase):
         assert self.dict1['test'] == self._get_udf_value(self.dict1, 'test')
         del self.dict1['test']
         with pytest.raises(KeyError):
-            self.dict1['test']
+            _ = self.dict1['test']
         assert self._get_udf_value(self.dict1, 'test') is None
 
     def test_items(self):
@@ -403,10 +401,10 @@ class TestPlacementDictionary(TestDescriptor):
         <test-entry xmlns:udf="http://genologics.com/ri/userdefined">
         </test-entry>""")
         instance = Mock(root=et, lims=self.lims)
-        dict = PlacementDictionary(instance)
-        assert len(dict.rootnode(dict.instance).findall('placement')) == 0
-        dict['A:1'] = self.art1
-        assert len(dict.rootnode(dict.instance).findall('placement')) == 1
+        d = PlacementDictionary(instance)
+        assert len(d.rootnode(d.instance).findall('placement')) == 0
+        d['A:1'] = self.art1
+        assert len(d.rootnode(d.instance).findall('placement')) == 1
 
     def test___delitem__(self):
         assert len(self.dict1.rootnode(self.dict1.instance).findall('placement')) == 1
@@ -414,7 +412,6 @@ class TestPlacementDictionary(TestDescriptor):
         assert len(self.dict1.rootnode(self.dict1.instance).findall('placement')) == 0
 
     def test_clear(self):
-        el = EntityList(self.instance1, 'artifact', Artifact)
         sd = self._make_desc(StringDescriptor, 'other')
         assert sd.__get__(self.instance1, None) == "thing"
         assert len(self.dict1.rootnode(self.dict1.instance).findall('placement')) == 1
@@ -424,7 +421,6 @@ class TestPlacementDictionary(TestDescriptor):
 
 
 class TestSubTagDictionary(TestCase):
-
     def setUp(self):
         et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <test-entry xmlns:udf="http://genologics.com/ri/userdefined">
@@ -491,7 +487,6 @@ class TestXmlElementAttributeDict(TestCase):
 
 
 class TestXmlPooledInputDict(TestCase):
-
     def setUp(self):
         et = ElementTree.fromstring('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         <test-entry>
@@ -527,7 +522,6 @@ class TestXmlPooledInputDict(TestCase):
 
 
 class TestEntityList(TestDescriptor):
-
     def setUp(self):
         et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     <test-entry>
@@ -598,7 +592,6 @@ class TestEntityList(TestDescriptor):
         assert len(el.instance.root.findall('artifact')) == 2
         a3 = Artifact(self.lims, id='a3')
         a4 = Artifact(self.lims, id='a4')
-        a5 = Artifact(self.lims, id='a5')
         el[0:2] = [a3, a4]
         assert len(el) == 2
         assert el[0] == a3
@@ -612,6 +605,30 @@ class TestEntityList(TestDescriptor):
         el.clear()
         assert len(el) == 0
         assert sd.__get__(self.instance1, None) == "thing"
+
+    def test___add__(self):
+        el1 = EntityList(self.instance1, 'artifact', Artifact)
+        assert len(el1) == 2
+        assert len(el1.instance.root.findall('artifact')) == 2
+        el2 = [Artifact(self.lims, id='a3'), Artifact(self.lims, id='a4')]
+
+        el3 = el1 + el2
+        assert len(el3) == 4
+        assert el3[:2] == el1
+        assert el3[2:] == el2
+
+    def test__iadd__(self):
+        el1 = EntityList(self.instance1, 'artifact', Artifact)
+        id1 = id(el1)
+        assert len(el1) == 2
+        assert len(el1.instance.root.findall('artifact')) == 2
+        el2 = [Artifact(self.lims, id='a3'), Artifact(self.lims, id='a4')]
+
+        el1 += el2
+        id2 = id(el1)
+        assert id1 == id2  # still the same object
+        assert len(el1) == 4
+        assert el1[2:] == el2
 
 
 class TestInputOutputMapList(TestCase):
@@ -629,15 +646,14 @@ class TestInputOutputMapList(TestCase):
         self.IO_map = InputOutputMapList()
 
     def test___get__(self):
-        expected_keys_input  = ['limsid', 'parent-process','uri']
-        expected_keys_ouput  = ['limsid', 'output-type', 'output-generation-type', 'uri']
+        expected_keys_input = ['limsid', 'parent-process', 'uri']
+        expected_keys_ouput = ['limsid', 'output-type', 'output-generation-type', 'uri']
         res = self.IO_map.__get__(self.instance1, None)
         assert sorted(res[0][0].keys()) == sorted(expected_keys_input)
         assert sorted(res[0][1].keys()) == sorted(expected_keys_ouput)
 
 
 class TestExternalidList(TestCase):
-
     def setUp(self):
         et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     <test-entry>
@@ -667,7 +683,6 @@ class TestExternalidList(TestCase):
 
 
 class TestXmlAttributeList(TestCase):
-
     def setUp(self):
         et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     <test-entry>
@@ -682,8 +697,8 @@ class TestXmlAttributeList(TestCase):
 
     def test_get(self):
         al = XmlAttributeList(self.instance1, tag='test-tag', nesting=['test-tags'])
-        assert al[0] == {'attrib1': 'value1', 'attrib2':'value2'}
-        assert al[1] == {'attrib1': 'value11', 'attrib2': 'value12', 'attrib3':'value13'}
+        assert al[0] == {'attrib1': 'value1', 'attrib2': 'value2'}
+        assert al[1] == {'attrib1': 'value11', 'attrib2': 'value12', 'attrib3': 'value13'}
 
     def test_append(self):
         el = XmlAttributeList(self.instance1, tag='test-tag', nesting=['test-tags'])
@@ -707,7 +722,6 @@ class TestXmlAttributeList(TestCase):
 
 
 class TestXmlReagentLabelList(TestCase):
-
     def setUp(self):
         et = ElementTree.fromstring('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         <test-entry>
@@ -732,7 +746,6 @@ class TestXmlReagentLabelList(TestCase):
 
 
 class TestXmlAction(TestCase):
-
     def setUp(self):
         et = ElementTree.fromstring('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
                 <test-entry>

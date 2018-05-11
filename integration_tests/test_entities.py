@@ -1,5 +1,4 @@
 import random
-
 from pyclarity_lims.entities import *
 
 
@@ -25,8 +24,8 @@ def _stringify_and_order(value):
         return str(value)
 
 
-class TestEntity():
-    proprerties = None
+class TestEntity:
+    properties = None
     functions = None
     klass = None
 
@@ -37,7 +36,7 @@ class TestEntity():
     def test_properties(self):
         tested_properties = []
         for k in self.value_dict:
-            assert k in self.proprerties
+            assert k in self.properties
             tested_properties.append(k)
             exp = self.value_dict.get(k)
             obs = _str_representation(getattr(self.entity, k))
@@ -46,136 +45,122 @@ class TestEntity():
                 print('exp: ' + str(exp))
                 print('obs: ' + str(obs))
 
-        non_tested_properties = set(self.proprerties).difference(tested_properties)
+        non_tested_properties = set(self.properties).difference(tested_properties)
         for k in non_tested_properties:
             # only access to make sure nothing crash in the parsing
             getattr(self.entity, k)
 
     def get_expected_values(self):
         expected_values = {}
-        for prop in self.proprerties:
+        for prop in self.properties:
             value = getattr(self.entity, prop)
             expected_values[prop] = _str_representation(value)
         return expected_values
 
 
 class TestArtifact(TestEntity):
-    proprerties = ['concentration', 'container', 'files', 'id', 'location', 'name', 'output_type', 'parent_process',
+    properties = ['concentration', 'container', 'files', 'id', 'location', 'name', 'output_type', 'parent_process',
                   'qc_flag', 'reagent_labels', 'samples', 'type', 'udf', 'uri', 'volume',
                   'workflow_stages', 'workflow_stages_and_statuses', 'working_flag']
     functions = ['create', 'input_artifact_list']
     klass = Artifact
 
-class TestSample(TestEntity):
 
-    proprerties = ['artifact', 'date_completed', 'date_received', 'externalids', 'files', 'id',
-                   'name', 'notes', 'project', 'submitter', 'udf', 'udt']
+class TestSample(TestEntity):
+    properties = ['artifact', 'date_completed', 'date_received', 'externalids', 'files', 'id', 'name', 'notes',
+                  'project', 'submitter', 'udf', 'udt']
     functions = ['create']
     klass = Sample
 
 
 class TestProject(TestEntity):
-
-    proprerties = ['close_date', 'externalids', 'files', 'id', 'invoice_date',  'name', 'open_date', 'researcher',
-                   'udf', 'udt']
+    properties = ['close_date', 'externalids', 'files', 'id', 'invoice_date', 'name', 'open_date', 'researcher', 'udf',
+                  'udt']
     functions = ['create']
     klass = Project
 
 
 class TestContainer(TestEntity):
-
-    proprerties = ['id', 'name', 'occupied_wells', 'placements', 'state', 'type', 'udf', 'udt']
+    properties = ['id', 'name', 'occupied_wells', 'placements', 'state', 'type', 'udf', 'udt']
     functions = ['get_placements', 'create']
     klass = Container
 
 
 class TestProcess(TestEntity):
-
-    proprerties = ['date_run', 'files', 'id', 'input_output_maps', 'process_parameter', 'protocol_name', 'step',
-                    'technician', 'type', 'udf', 'udt']
-    functions = ['create', 'output_containers', 'parent_processes','analytes','input_per_sample', 'all_inputs',
+    properties = ['date_run', 'files', 'id', 'input_output_maps', 'process_parameter', 'protocol_name', 'step',
+                  'technician', 'type', 'udf', 'udt']
+    functions = ['create', 'output_containers', 'parent_processes', 'analytes', 'input_per_sample', 'all_inputs',
                  'all_outputs', 'result_files', 'shared_result_files', 'outputs_per_input']
     klass = Process
 
 
 class TestStep(TestEntity):
-        proprerties = ['actions',  'available_programs', 'configuration', 'current_state',
-                       'date_completed', 'date_started', 'details', 'id', 'placements', 'pools',
-                       'process', 'program_names', 'program_status', 'reagent_lots']
+        properties = ['actions', 'available_programs', 'configuration', 'current_state', 'date_completed',
+                      'date_started', 'details', 'id', 'placements', 'pools', 'process', 'program_names',
+                      'program_status', 'reagent_lots']
         functions = ['create', 'advance', 'set_placements', 'trigger_program']
         klass = Step
 
 
 class TestWorkflow(TestEntity):
-        proprerties = ['name', 'protocols', 'stages', 'status']
+        properties = ['name', 'protocols', 'stages', 'status']
         functions = ['create']
         klass = Workflow
 
 
 class TestProtocol(TestEntity):
-        proprerties = ['id', 'properties', 'steps']
+        properties = ['id', 'properties', 'steps']
         functions = ['create']
         klass = Protocol
 
 
 class TestLab(TestEntity):
-
-    proprerties = ['billing_address', 'externalids', 'id', 'name', 'shipping_address', 'udf', 'udt', 'website']
+    properties = ['billing_address', 'externalids', 'id', 'name', 'shipping_address', 'udf', 'udt', 'website']
     functions = ['create']
     klass = Lab
 
 
 class TestResearcher(TestEntity):
-
-    proprerties = ['email', 'externalids', 'fax', 'first_name', 'id', 'initials', 'lab', 'last_name', 'name', 'phone',
-                   'udf', 'udt']
+    properties = ['email', 'externalids', 'fax', 'first_name', 'id', 'initials', 'lab', 'last_name', 'name', 'phone',
+                  'udf', 'udt']
     functions = ['create']
     klass = Researcher
 
 
 class TestReagentKit(TestEntity):
-
-    proprerties = ['archived', 'id', 'name', 'supplier', 'uri', 'website']
+    properties = ['archived', 'id', 'name', 'supplier', 'uri', 'website']
     functions = ['create']
     klass = ReagentKit
 
 
 class TestReagentLot(TestEntity):
-
-    proprerties = ['created_by', 'created_date', 'expiry_date', 'id', 'last_modified_by', 'last_modified_date',
-                   'lot_number', 'name', 'reagent_kit', 'status', 'usage_count']
+    properties = ['created_by', 'created_date', 'expiry_date', 'id', 'last_modified_by', 'last_modified_date',
+                  'lot_number', 'name', 'reagent_kit', 'status', 'usage_count']
     functions = ['create']
     klass = ReagentLot
 
 
 class TestReagentType(TestEntity):
-
-    proprerties = ['category', 'id', 'sequence']
-    functions = ['create']
-    klass = ReagentType
-
-
-class TestReagentType(TestEntity):
-    proprerties = ['category', 'id', 'sequence']
+    properties = ['category', 'id', 'sequence']
     functions = ['create']
     klass = ReagentType
 
 
 class TestStage(TestEntity):
-    proprerties = ['id', 'index', 'name', 'protocol', 'step', 'workflow']
+    properties = ['id', 'index', 'name', 'protocol', 'step', 'workflow']
     functions = ['create']
     klass = Stage
 
 
 class TestProtocolStep(TestEntity):
-    proprerties = ['epp_triggers', 'id', 'name', 'permitted_containers', 'queue_fields', 'sample_fields', 'step_fields',
-                   'step_properties', 'type', 'uri']
+    properties = ['epp_triggers', 'id', 'name', 'permitted_containers', 'queue_fields', 'sample_fields', 'step_fields',
+                  'step_properties', 'type', 'uri']
     functions = ['create']
     klass = ProtocolStep
 
 
 class TestQueue(TestEntity):
-    proprerties = ['artifacts', 'id', 'queued_artifacts', 'uri']
+    properties = ['artifacts', 'id', 'queued_artifacts', 'uri']
     functions = ['create']
     klass = Queue
 
@@ -232,6 +217,7 @@ def generate_entities_expected_output(lims):
     expected_values[TestQueue.klass.__name__] = get_x_entities(steps, TestQueue, nb, uri_getter=lambda x: x.queue.uri)
 
     return expected_values
+
 
 def test_all_entities(lims, entities_config):
     for entity in map_entity_to_test:

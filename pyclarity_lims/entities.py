@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 
 class Entity(object):
     """
-    Base abstract class for the every entities in the LIMS database.
-    An Entity correspond to an XML document and as such it should have at least a uri or an id.
+    Base abstract class for every entity in the LIMS database.
+    An Entity corresponds to an XML document and as such it should have at least a uri or an id.
     """
 
     _TAG = None
@@ -127,7 +127,7 @@ class Entity(object):
 
 
 class Lab(Entity):
-    """A lab is a list of researcher."""
+    """A lab is a list of researchers."""
 
     _URI = 'labs'
     _PREFIX = 'lab'
@@ -139,13 +139,13 @@ class Lab(Entity):
     shipping_address = StringDictionaryDescriptor(tag='shipping-address')
     """Shipping address of the lab"""
     udf = UdfDictionaryDescriptor()
-    """Dictionary of UDF associated with the Lab"""
+    """Dictionary of UDFs associated with the Lab"""
     udt = UdtDictionaryDescriptor()
-    """Dictionary of UDT associated with the Lab"""
+    """Dictionary of UDTs associated with the Lab"""
     externalids = ExternalidListDescriptor()
-    """list of external identifiers associated with the lab"""
+    """List of external identifiers associated with the lab"""
     website = StringDescriptor('website')
-    """url to the lab website"""
+    """URL to the lab website"""
 
 
 class Researcher(Entity):
@@ -169,11 +169,11 @@ class Researcher(Entity):
     lab = EntityDescriptor('lab', Lab)
     """Lab associated with the researcher"""
     udf = UdfDictionaryDescriptor()
-    """Dictionary of UDF associated with the researcher"""
+    """Dictionary of UDFs associated with the researcher"""
     udt = UdtDictionaryDescriptor()
-    """Dictionary of UDT associated with the researcher"""
+    """Dictionary of UDTs associated with the researcher"""
     externalids = ExternalidListDescriptor()
-    """list of external identifiers associated with the researcher"""
+    """List of external identifiers associated with the researcher"""
 
     # credentials XXX
 
@@ -207,7 +207,7 @@ class File(Entity):
     original_location = StringDescriptor('original-location')
     """The original location of the file when it was uploaded"""
     is_published = BooleanDescriptor('is-published')
-    """wether the file is published or not"""
+    """Whether the file is published or not"""
 
 
 class Project(Entity):
@@ -227,13 +227,13 @@ class Project(Entity):
     researcher = EntityDescriptor('researcher', Researcher)
     """The researcher associated with the project."""
     udf = UdfDictionaryDescriptor()
-    """Dictionary of UDF associated with the project"""
+    """Dictionary of UDFs associated with the project"""
     udt = UdtDictionaryDescriptor()
-    """Dictionary of UDT associated with the project"""
+    """Dictionary of UDTs associated with the project"""
     files = EntityListDescriptor(tag=nsmap('file:file'), klass=File)
     """List of files attached to the project"""
     externalids = ExternalidListDescriptor()
-    """list of external identifiers associated with the project"""
+    """List of external identifiers associated with the project"""
     # permissions XXX
 
 
@@ -256,24 +256,23 @@ class Sample(Entity):
     """The researcher who submitted this sample."""
     # artifact: defined below
     udf = UdfDictionaryDescriptor()
-    """Dictionary of UDF associated with the sample."""
+    """Dictionary of UDFs associated with the sample."""
     udt = UdtDictionaryDescriptor()
-    """Dictionary of UDT associated with the sample."""
+    """Dictionary of UDTs associated with the sample."""
     notes = EntityListDescriptor(tag='note', klass=Note)
     """List of notes associated with the sample."""
     files = EntityListDescriptor(tag=nsmap('file:file'), klass=File)
     """List of files associated with the sample."""
     externalids = ExternalidListDescriptor()
-    """list of external identifiers associated with the sample"""
-    artifact = None # See bottom of the file
+    """List of external identifiers associated with the sample"""
+    artifact = None  # See bottom of the file
     """Initial :py:class:`Artifact <pyclarity_lims.entities.Artifact>` associated with the sample."""
-
 
     @classmethod
     def create(cls, lims, container, position, **kwargs):
         """Create an instance of Sample from attributes then post it to the LIMS"""
         if not isinstance(container, Container):
-            raise TypeError('%s is not of type Container'%container)
+            raise TypeError('%s is not of type Container' % container)
         instance = super(Sample, cls)._create(lims, **kwargs)
 
         location = ElementTree.SubElement(instance.root, 'location')
@@ -287,7 +286,7 @@ class Sample(Entity):
 
 
 class Containertype(Entity):
-    "Type of container for analyte artifacts."
+    """Type of container for analyte artifacts."""
 
     _TAG = 'container-type'
     _URI = 'containertypes'
@@ -296,7 +295,7 @@ class Containertype(Entity):
     name = StringAttributeDescriptor('name')
     """Name of the type of container (Tube, 96 well plates, ...)"""
     calibrant_wells = StringListDescriptor(tag='calibrant-well')
-    """If there are any well on this container that are use for calibration. They would be defined here."""
+    """If there are any wells on this container that are use for calibration. They would be defined here."""
     unavailable_wells = StringListDescriptor(tag='unavailable-well')
     """If there are any well on this container that should not be used. They would be defined here."""
     x_dimension = DimensionDescriptor('x-dimension')
@@ -306,25 +305,25 @@ class Containertype(Entity):
 
 
 class Container(Entity):
-    "Container for analyte artifacts."
+    """Container for analyte artifacts."""
 
     _URI = 'containers'
     _PREFIX = 'con'
 
     name = StringDescriptor('name')
     """Name of the container"""
-    type  = EntityDescriptor('type', Containertype)
+    type = EntityDescriptor('type', Containertype)
     """:py:class:`Type <pyclarity_lims.entities.Containertype>` of the container."""
     occupied_wells = IntegerDescriptor('occupied-wells')
-    """number of well occupied in the container."""
+    """Number of wells occupied in the container."""
     placements = PlacementDictionaryDescriptor()
-    """Dictionary of placement in a Container. The key is the location such as "A:1" and the value is the artifact in that well/tube."""
+    """Dictionary of placements in a Container. The key is the location such as "A:1" and the value is the artifact in that well/tube."""
     udf = UdfDictionaryDescriptor()
-    """Dictionary of UDF associated with the container."""
+    """Dictionary of UDFs associated with the container."""
     udt = UdtDictionaryDescriptor()
-    """Dictionary of UDT associated with the container."""
+    """Dictionary of UDTs associated with the container."""
     state = StringDescriptor('state')
-    """State of the container. i.e. Populated"""
+    """State of the container. e.g. Populated"""
 
     def get_placements(self):
         """Get the dictionary of locations and artifacts
@@ -345,35 +344,35 @@ class Processtype(Entity):
 
 
 class Udfconfig(Entity):
-    "Instance of field type (cnf namespace)."
+    """Instance of field type (cnf namespace)."""
     _URI = 'configuration/udfs'
 
     name = StringDescriptor('name')
     """Name of the UDF."""
     attach_to_name = StringDescriptor('attach-to-name')
-    """name of entity type, the UDF is attached to."""
+    """Name of entity type the UDF is attached to."""
     attach_to_category = StringDescriptor('attach-to-category')
     """_"""
     show_in_lablink = BooleanDescriptor('show-in-lablink')
-    """whether this UDF will be shown in lablink."""
+    """Whether this UDF will be shown in lablink."""
     allow_non_preset_values = BooleanDescriptor('allow-non-preset-values')
-    """whether the UDF allows presets."""
+    """Whether the UDF allows presets."""
     first_preset_is_default_value = BooleanDescriptor('first-preset-is-default-value')
-    """whether the first preset of the UDF is the default value."""
+    """Whether the first preset of the UDF is the default value."""
     show_in_tables = BooleanDescriptor('show-in-tables')
-    """whether the UDF can be shown in a table."""
+    """Whether the UDF can be shown in a table."""
     is_editable = BooleanDescriptor('is-editable')
-    """whether the UDF is editable."""
+    """Whether the UDF is editable."""
     is_deviation = BooleanDescriptor('is-deviation')
-    """whether the UDF is a deviation."""
+    """Whether the UDF is a deviation."""
     is_controlled_vocabulary = BooleanDescriptor('is-controlled-vocabulary')
-    """whether the UDF has a controled vocabulary."""
+    """Whether the UDF has a controled vocabulary."""
     presets = StringListDescriptor('preset')
     """List of presets."""
 
 
 class Process(Entity):
-    "Process (instance of Processtype) executed producing ouputs from inputs."
+    """Process (instance of Processtype) executed producing ouputs from inputs."""
 
     _URI = 'processes'
     _PREFIX = 'prc'
@@ -389,8 +388,8 @@ class Process(Entity):
     """The name of the protocol"""
     input_output_maps = InputOutputMapList()
     """
-    list of tuples (input, output) where input and output item are dictionaries representing the input/output.
-    keys of the dict can be:
+    List of tuples (input, output) where input and output item are dictionaries representing the input/output.
+    Keys of the dict can be:
 
     * for the input:
 
@@ -408,23 +407,23 @@ class Process(Entity):
 
     """
     udf = UdfDictionaryDescriptor()
-    """Dictionary of UDF associated with the process."""
+    """Dictionary of UDFs associated with the process."""
     udt = UdtDictionaryDescriptor()
-    """Dictionary of UDT associated with the process."""
+    """Dictionary of UDTs associated with the process."""
     files = EntityListDescriptor(nsmap('file:file'), File)
     """List of :py:class:`files <pyclarity_lims.entities.File>` associated with the sample."""
     process_parameter = StringDescriptor('process-parameter')
-    """parameter for the process"""
+    """Parameter for the process"""
     # instrument XXX
     # process_parameters XXX
 
     def outputs_per_input(self, inart, ResultFile=False, SharedResultFile=False, Analyte=False):
-        """Getting all the output artifacts related to a particual input artifact
+        """Getting all the output artifacts related to a particular input artifact
 
         :param inart: input artifact id use to select the output
-        :param ResultFile: boolean specifying to only return ResultFile.
-        :param SharedResultFile: boolean specifying to only return SharedResultFile.
-        :param Analyte: boolean specifying to only return Analyte.
+        :param ResultFile: boolean specifying to only return ResultFiles.
+        :param SharedResultFile: boolean specifying to only return SharedResultFiles.
+        :param Analyte: boolean specifying to only return Analytes.
         :return: output artifact corresponding to the input artifact provided
         """
         inouts = [io for io in self.input_output_maps if io[0]['limsid'] == inart]
@@ -438,10 +437,9 @@ class Process(Entity):
         return outs
 
     def input_per_sample(self, sample):
-        """Getting all the input artifacts dereved from the specified sample
+        """Getting all the input artifacts derived from the specified sample
 
         :param sample: the sample name to check against
-
         :return: list of input artifacts matching the sample name
 
         """
@@ -454,20 +452,18 @@ class Process(Entity):
         return ins
 
     def all_inputs(self, unique=True, resolve=False):
-        """Retrieving all input artifacts from input_output_maps
-        if unique is true, no duplicates are returned.
+        """Retrieving all input artifacts from input_output_maps.
+        If unique is true, no duplicates are returned.
 
-        :param unique: boolean specifying if the list of artifact should be uniqued
+        :param unique: boolean specifying if the list of artifacts should be uniqued
         :param resolve: boolean specifying if the artifacts entities should be resolved through a batch query.
-
-        :return: list of input artifact.
-
+        :return: list of input artifacts.
         """
         # if the process has no input, that is not standard and we want to know about it
         try:
             ids = [io[0]['limsid'] for io in self.input_output_maps]
         except TypeError:
-            logger.error("Process ", self, " has no input artifacts")
+            logger.error('Process ', self, ' has no input artifacts')
             raise TypeError
         if unique:
             ids = list(frozenset(ids))
@@ -477,15 +473,15 @@ class Process(Entity):
             return [Artifact(self.lims, id=id) for id in ids if id is not None]
 
     def all_outputs(self, unique=True, resolve=False):
-        """Retrieving all output artifacts from input_output_maps
-        if unique is true, no duplicates are returned.
+        """Retrieving all output artifacts from input_output_maps.
+        If unique is true, no duplicates are returned.
 
-        :param unique: boolean specifying if the list of artifact should be uniqued
-        :param resolve: boolean specifying if the artifacts entities should be resolved through a batch query.
-        :return: list of output artifact.
+        :param unique: boolean specifying if the list of artifacts should be uniqued
+        :param resolve: boolean specifying if the artifact entities should be resolved through a batch query.
+        :return: list of output artifacts.
 
         """
-        # Given how ids is structured, io[1] might be None : some process don't have an output.
+        # Given how ids is structured, io[1] might be None: some process don't have an output.
         ids = [io[1]['limsid'] for io in self.input_output_maps if io[1] is not None]
         if unique:
             ids = list(frozenset(ids))
@@ -495,19 +491,19 @@ class Process(Entity):
             return [Artifact(self.lims, id=id) for id in ids if id is not None]
 
     def shared_result_files(self):
-        """Retreve all resultfiles of output-generation-type PerAllInputs."""
+        """Retrieve all resultfiles of output-generation-type PerAllInputs."""
         artifacts = self.all_outputs(unique=True)
         return [a for a in artifacts if a.output_type == 'SharedResultFile']
 
     def result_files(self):
-        """Retreve all resultfiles of output-generation-type perInput."""
+        """Retrieve all resultfiles of output-generation-type perInput."""
         artifacts = self.all_outputs(unique=True)
         return [a for a in artifacts if a.output_type == 'ResultFile']
 
     def analytes(self):
-        """Retreving the output Analytes of the process, if existing.
+        """Retrieving the output Analytes of the process, if existing.
         If the process is not producing any output analytes, the input
-        analytes are returned. Input/Output is returned as a information string.
+        analytes are returned. Input/Output is returned as an information string.
         Makes aggregate processes and normal processes look the same."""
         info = 'Output'
         artifacts = self.all_outputs(unique=True)
@@ -537,7 +533,7 @@ class Process(Entity):
 
 
 class Artifact(Entity):
-    "Any process input or output; analyte or file."
+    """Any process input or output; analyte or file."""
 
     _URI = 'artifacts'
     _PREFIX = 'art'
@@ -546,30 +542,30 @@ class Artifact(Entity):
     """The name of the artifact."""
     type = StringDescriptor('type')
     """The type of the artifact: Analyte, ResultFile or SharedResultFile."""
-    output_type    = StringDescriptor('output-type')
+    output_type = StringDescriptor('output-type')
     """The output-type of the Artifact"""
     parent_process = EntityDescriptor('parent-process', Process)
     """The :py:class:`parent process <pyclarity_lims.entities.Process>` that generated this artfact."""
     volume = StringDescriptor('volume')
     """_"""
-    concentration  = StringDescriptor('concentration')
+    concentration = StringDescriptor('concentration')
     """_"""
     qc_flag = StringDescriptor('qc-flag')
     """The qc-flag applied to the Artifact. """
     location = LocationDescriptor('location')
     """The Artifact's location in a container."""
-    working_flag   = BooleanDescriptor('working-flag')
+    working_flag = BooleanDescriptor('working-flag')
     """The working-flag of the Artifact."""
     samples = EntityListDescriptor('sample', Sample)
-    """list of :py:class:`Sample <pyclarity_lims.entities.Sample>` associted with this artifact."""
+    """List of :py:class:`Samples <pyclarity_lims.entities.Sample>` associated with this artifact."""
     udf = UdfDictionaryDescriptor()
-    """Dictionary of UDF associated with the artifact."""
+    """Dictionary of UDFs associated with the artifact."""
     files = EntityListDescriptor(nsmap('file:file'), File)
     """List of :py:class:`files <pyclarity_lims.entities.File>` associated with the artifact."""
     reagent_labels = ReagentLabelList()
-    """List of :py:class:`Reagent label <pyclarity_lims.entities.Reagent_label>` associated with the artifact."""
-    workflow_stages = None # See bottom of the file
-    """List of workflow stages :py:class:`Step <pyclarity_lims.entities.Step>` that this artifact ran through."""
+    """List of :py:class:`Reagent labels <pyclarity_lims.entities.Reagent_label>` associated with the artifact."""
+    workflow_stages = None  # See bottom of the file
+    """List of workflow stage :py:class:`Steps <pyclarity_lims.entities.Step>` that this artifact ran through."""
 
     # artifact_flags XXX
     # artifact_groups XXX
@@ -578,15 +574,15 @@ class Artifact(Entity):
         """Returns the input artifact ids of the parent process."""
         input_artifact_list = []
         try:
-            for tuple in self.parent_process.input_output_maps:
-                if tuple[1]['limsid'] == self.id:
-                    input_artifact_list.append(tuple[0]['uri'])  # ['limsid'])
+            for iomap in self.parent_process.input_output_maps:
+                if iomap[1]['limsid'] == self.id:
+                    input_artifact_list.append(iomap[0]['uri'])  # ['limsid'])
         except:
             pass
         return input_artifact_list
 
     def get_state(self):
-        "Parse out the state value from the URI."
+        """Parse out the state value from the URI."""
         parts = urlparse(self.uri)
         params = parse_qs(parts.query)
         try:
@@ -596,14 +592,14 @@ class Artifact(Entity):
 
     @property
     def container(self):
-        "The container where the artifact is located, or None"
+        """The container where the artifact is located, or None"""
         try:
             return self.location[0]
         except:
             return None
 
     def stateless(self):
-        "returns the artefact independently of it's state"
+        """Return the artifact independently of its state"""
         parts = urlparse(self.uri)
         if 'state' in parts[4]:
             stateless_uri = urlunparse([parts[0], parts[1], parts[2], parts[3], '', ''])
@@ -624,7 +620,7 @@ class Artifact(Entity):
         return result
 
     workflow_stages_and_statuses = property(_get_workflow_stages_and_statuses)
-    """List of tuple containing three elements (A, B, C) where:
+    """List of tuples containing three elements (A, B, C) where:
 
         - A is a :py:class:`Step <pyclarity_lims.entities.Step>` this artifact has run through.
         - B is the status of said Step.
@@ -645,14 +641,14 @@ class ReagentKit(Entity):
     website = StringDescriptor('website')
     """Website associated with the reagent kit"""
     archived = BooleanDescriptor('archived')
-    """Wether the reagent kit is archived or not"""
+    """Whether the reagent kit is archived or not"""
 
 
 class ReagentLot(Entity):
-    """Reagent Lots contain information about a particulal lot of reagent used in a step"""
+    """Information about a particular regaent lot used in a step"""
     _URI = "reagentlots"
     _TAG = "reagent-lot"
-    _PREFIX = 'lot'
+    _PREFIX = "lot"
 
     reagent_kit = EntityDescriptor('reagent-kit', ReagentKit)
     """:py:class:`Reagent kit <pyclarity_lims.entities.ReagentKit>` associated with this lot."""
@@ -673,15 +669,15 @@ class ReagentLot(Entity):
     status = StringDescriptor('status')
     """Status of the lot."""
     usage_count = IntegerDescriptor('usage-count')
-    """Number of time the lot was used."""
+    """Number of times the lot was used."""
 
 
 class StepPlacements(Entity):
     """Placements from within a step. Supports POST"""
 
     selected_containers = EntityListDescriptor(tag='container', klass=Container, nesting=['selected-containers'])
-    """List of :py:class:`container <pyclarity_lims.entities.Container>`"""
-    _placement_list      = OutputPlacementListDescriptor()
+    """List of :py:class:`containers <pyclarity_lims.entities.Container>`"""
+    _placement_list = OutputPlacementListDescriptor()
 
     def get_placement_list(self):
         return self._placement_list
@@ -693,9 +689,10 @@ class StepPlacements(Entity):
     placement_list = property(get_placement_list, set_placement_list)
     """
     List of tuples (A, (B, C)) where:
-    A is an :py:class:`artifact <pyclarity_lims.entities.Artifact>`
-    B is a :py:class:`container <pyclarity_lims.entities.Container>`
-    C is a string specifying the location in the container such as "1:1"
+
+    - A is an :py:class:`artifact <pyclarity_lims.entities.Artifact>`
+    - B is a :py:class:`container <pyclarity_lims.entities.Container>`
+    - C is a string specifying the location in the container such as "1:1"
     """
 
     def get_selected_containers(self):
@@ -707,28 +704,28 @@ class StepActions(Entity):
     _escalation = None
     next_actions = MutableDescriptor(XmlActionList)
     """
-    List of dict that representing an action for an artifact. They keys of the dict are:
-      - artifact: The :py:class:`artifact <pyclarity_lims.entities.Artifact>` associated with this Action
-      - step: The next :py:class:`step <pyclarity_lims.entities.Step>` associated with this action
-      - rework-step: The :py:class:`step <pyclarity_lims.entities.Step>` associated with this action when the Artifact need to be requeued
-      - action: The type of action to perform.
-        - leave: Leave the sample in the QC protocol.
-        - repeat: Repeat this step.
-        - remove: Remove from workflow.
-        - review: Request manager review.
-        - complete: Mark protocol as complete.
-        - store: Store for later.
-        - nextstep: Continue to the next step.
-        - rework: Rework from an earlier step.
-        - completerepeat: Complete and Repeat
-        - unknown: The action is unknown.
+    List of dicts that represent an action for an artifact. They keys of the dict are:
+        - artifact: The :py:class:`artifact <pyclarity_lims.entities.Artifact>` associated with this Action
+        - step: The next :py:class:`step <pyclarity_lims.entities.Step>` associated with this action
+        - rework-step: The :py:class:`step <pyclarity_lims.entities.Step>` associated with this action when the Artifact needs to be requeued
+        - action: The type of action to perform.
+            - leave: Leave the sample in the QC protocol.
+            - repeat: Repeat this step.
+            - remove: Remove from workflow.
+            - review: Request manager review.
+            - complete: Mark protocol as complete.
+            - store: Store for later.
+            - nextstep: Continue to the next step.
+            - rework: Rework from an earlier step.
+            - completerepeat: Complete and Repeat
+            - unknown: The action is unknown.
         """
-    step = None # See bottom of the file
+    step = None  # See bottom of the file
     """:py:class:`Step <pyclarity_lims.entities.Step>` associated with the actions."""
 
     @property
     def escalation(self):
-        # TODO: Convert to using descriptor and document
+        # TODO: Convert to use descriptors and document
         if not self._escalation:
             self.get()
             self._escalation = {}
@@ -736,12 +733,12 @@ class StepActions(Entity):
                 self._escalation['artifacts'] = []
                 self._escalation['author'] = Researcher(self.lims,
                                                         uri=node.find('request').find('author').attrib.get('uri'))
-                self._escalation['request'] = uri = node.find('request').find('comment').text
+                self._escalation['request'] = node.find('request').find('comment').text
                 if node.find('review') is not None:  # recommended by the Etree doc
                     self._escalation['status'] = 'Reviewed'
                     self._escalation['reviewer'] = Researcher(self.lims,
                                                               uri=node.find('review').find('author').attrib.get('uri'))
-                    self._escalation['answer'] = uri = node.find('review').find('comment').text
+                    self._escalation['answer'] = node.find('review').find('comment').text
                 else:
                     self._escalation['status'] = 'Pending'
 
@@ -753,61 +750,56 @@ class StepActions(Entity):
 
 class StepReagentLots(Entity):
     reagent_lots = EntityListDescriptor('reagent-lot', ReagentLot, nesting=['reagent-lots'])
-    """List of :py:class:`ReagentLot <pyclarity_lims.entities.ReagentLot>`"""
+    """List of :py:class:`ReagentLots <pyclarity_lims.entities.ReagentLot>`"""
 
 
 class StepDetails(Entity):
-    """Detail associated with a step"""
+    """Details associated with a step"""
 
     input_output_maps = InputOutputMapList(nesting=['input-output-maps'])
     """
-        list of tuples (input, output) where input and output item are dictionaries representing the input/output.
-        keys of the dict can be:
+        List of tuples (input, output) where input and output item are dictionaries representing the input/output.
+        Keys of the dict can be:
 
         * for the input:
-
             * post-process-uri: input :py:class:`Artifact <pyclarity_lims.entities.Artifact>`
             * uri: input :py:class:`Artifact <pyclarity_lims.entities.Artifact>`
             * limsid: lims id of the input artifact
             * parent-process: :py:class:`Process <pyclarity_lims.entities.Process>` that generated this input
 
         * for the output:
-
             * uri: output :py:class:`Artifact <pyclarity_lims.entities.Artifact>`
             * limsid: id of the Artifact generated
             * output-generation-type: type of output generation (example: PerInput)
             * output-type: type of artifact generated (Analyte, or ResultFile)
-
     """
     udf = UdfDictionaryDescriptor(nesting=['fields'])
-    """Dictionary of UDF associated with the step"""
+    """Dictionary of UDFs associated with the step"""
     udt = UdtDictionaryDescriptor(nesting=['fields'])
-    """Dictionary of UDT associated with the step"""
+    """Dictionary of UDTs associated with the step"""
 
 
 class StepProgramStatus(Entity):
-    """Status display in the step"""
+    """Status displayed in the step"""
 
-    status  = StringDescriptor('status')
+    status = StringDescriptor('status')
     """Status of the program"""
     message = StringDescriptor('message')
-    """Message return by the program"""
+    """Message returned by the program"""
 
 
 class StepPools(Entity):
     pooled_inputs = MutableDescriptor(XmlPooledInputDict)
-    """Dictionary where the key are the pool names and the values are tuples (pool, inputs) representing a pool.
+    """Dictionary where the keys are the pool names and the values are tuples (pool, inputs) representing a pool.
     Each tuple has two elements:
 
         * an output Artifact containing the pool.
-
         * a tuple containing the input artifacts for that pool.
-
     """
 
 
 class Step(Entity):
-    "Step, as defined by the genologics API."
+    """Step, as defined by the genologics API."""
 
     _URI = 'steps'
     _PREFIX = 'stp'
@@ -817,19 +809,19 @@ class Step(Entity):
     """The current state of the step."""
     _reagent_lots = EntityDescriptor('reagent-lots', StepReagentLots)
     actions = EntityDescriptor('actions', StepActions)
-    """link to the :py:class:`StepActions <pyclarity_lims.entities.StepActions>` entity"""
+    """Link to the :py:class:`StepActions <pyclarity_lims.entities.StepActions>` entity"""
     placements = EntityDescriptor('placements', StepPlacements)
-    """link to the :py:class:`StepPlacements <pyclarity_lims.entities.StepPlacements>` entity"""
+    """Link to the :py:class:`StepPlacements <pyclarity_lims.entities.StepPlacements>` entity"""
     details = EntityDescriptor('details', StepDetails)
-    """link to the :py:class:`StepDetails <pyclarity_lims.entities.StepDetails>` entity"""
+    """Link to the :py:class:`StepDetails <pyclarity_lims.entities.StepDetails>` entity"""
     program_status = EntityDescriptor('program-status', StepProgramStatus)
-    """link to the :py:class:`StepProgramStatus <pyclarity_lims.entities.StepProgramStatus>` entity"""
+    """Link to the :py:class:`StepProgramStatus <pyclarity_lims.entities.StepProgramStatus>` entity"""
     pools = EntityDescriptor('pools', StepPools)
-    """link to the :py:class:`StepPools <pyclarity_lims.entities.StepPools>` entity"""
+    """Link to the :py:class:`StepPools <pyclarity_lims.entities.StepPools>` entity"""
     date_started = StringDescriptor('date-started')
-    """The date at which the step started in format Year-Month-DayTHour:Min:Sec i.e. 2016-11-22T10:43:32.857+00:00"""
+    """The date at which the step started in format Year-Month-DayTHour:Min:Sec, e.g. 2016-11-22T10:43:32.857+00:00"""
     date_completed = StringDescriptor('date-completed')
-    """The date at which the step completed in format Year-Month-DayTHour:Min:Sec i.e. 2016-11-22T10:43:32.857+00:00"""
+    """The date at which the step completed in format Year-Month-DayTHour:Min:Sec, e.g. 2016-11-22T10:43:32.857+00:00"""
     _available_programs = None
     configuration = None
     """:py:class:`Step configuration<pyclarity_lims.entities.ProtocolStep>` associated with the step."""
@@ -838,6 +830,7 @@ class Step(Entity):
         """
         Send a post query to advance the step to the next step
         """
+        self.get()
         self.root = self.lims.post(
             uri="{}/advance".format(self.uri),
             data=self.lims.tostring(ElementTree.ElementTree(self.root))
@@ -845,14 +838,14 @@ class Step(Entity):
 
     @property
     def reagent_lots(self):
-        """list of reagent lots"""
+        """List of reagent lots"""
         if self._reagent_lots:
             return self._reagent_lots.reagent_lots
 
     @property
     def available_programs(self):
         """
-        List of available program to trigger.
+        List of available programs to trigger.
         Each element is a tuple with the name and the trigger uri
         """
         self.get()
@@ -874,7 +867,7 @@ class Step(Entity):
         Trigger a program of the provided name.
 
         :param name: the name of the program.
-        :return: The program status.
+        :return: the program status.
         :raise ValueError: if the program does not exist.
         """
         progs = [ap[1] for ap in self.available_programs if name == ap[0]]
@@ -894,33 +887,35 @@ class Step(Entity):
         """
         Create a new placement for a new step.
         This method also modifies the selected containers with the provided output container.
-        It is meant to be used with a newly created step that do not have a placement yet.
+        It is meant to be used with a newly created step that does not have a placement yet.
 
-        :param output_containers: List of :py:class:`Container <pyclarity_lims.entities.Container>`
+        :param output_containers: List of :py:class:`Containers <pyclarity_lims.entities.Container>`
                                   used to store the output artifacts.
         :param output_placement_list: List of tuples (A, (B, C)) where:
-                                       A is an :py:class:`artifact <pyclarity_lims.entities.Artifact>`
-                                       B is a :py:class:`container <pyclarity_lims.entities.Container>`
-                                       C is a string specifying the location in the container such as "1:1"
+
+            - A is an :py:class:`artifact <pyclarity_lims.entities.Artifact>`,
+            - B is a :py:class:`container <pyclarity_lims.entities.Container>`,
+            - C is a string specifying the location in the container such as "1:1"
 
         """
-        self.placement = StepPlacements(self.lims, uri=self.uri + '/placements')
-        self.placement.selected_containers = output_containers
-        self.placement.placement_list = output_placement_list
-        self.placement.root = self.placement.post()
+        self.placements = StepPlacements(self.lims, uri=self.uri + '/placements')
+        self.placements.selected_containers = output_containers
+        self.placements.placement_list = output_placement_list
+        self.placements.root = self.placements.post()
 
     @classmethod
     def create(cls, lims, protocol_step, inputs, container_type_name=None, reagent_category=None, replicates=1, **kwargs):
         """
         Create a new instance of a Step. This method will start a step from queued artifacts.
 
+        :param lims: Lims connection object
         :param protocol_step: the :py:class:`ProtocolStep <pyclarity_lims.entities.ProtocolStep>` specifying the step to start.
-        :param inputs: A list of :py:class:`artifact <pyclarity_lims.entities.Artifact>` as input to the step.
-                       These needs to be queued for that step for the query to be successful.
+        :param inputs: A list of :py:class:`artifacts <pyclarity_lims.entities.Artifact>` as input to the step.
+                       These need to be queued for that step for the query to be successful.
         :param container_type_name: optional name of the type of container that this step use for its output.
                                     if omitted it uses the required type from the ProtocolStep if there is only one.
         :param reagent_category: optional reagent_category.
-        :param replicates: int or list of int specifying the number of replicates for each inputs.
+        :param replicates: int or list of ints specifying the number of replicates for each inputs.
         """
         instance = super(Step, cls)._create(lims, **kwargs)
         # Check configuratio of the step
@@ -968,22 +963,22 @@ class ProtocolStep(Entity):
 
     _TAG = 'step'
 
-    name = StringAttributeDescriptor("name")
+    name = StringAttributeDescriptor('name')
     """Name of the step"""
     type = EntityDescriptor('process-type', Processtype)
     """:py:class:`Processtype <pyclarity_lims.entities.Processtype>` associated with this step."""
     permitted_containers = StringListDescriptor('container-type', nesting=['permitted-containers'])
-    """List of name for the permitted container type in that step."""
+    """List of names for the permitted container type in that step."""
     queue_fields = AttributeListDescriptor('queue-field', nesting=['queue-fields'])
-    """List of dict describing the fields available in that step's queue."""
+    """List of dicts describing the fields available in that step's queue."""
     step_fields = AttributeListDescriptor('step-field', nesting=['step-fields'])
-    """List of dict describing the fields available in that step's UDF."""
+    """List of dicts describing the fields available in that step's UDF."""
     sample_fields = AttributeListDescriptor('sample-field', nesting=['sample-fields'])
-    """List of dict describing the field available in that step's sample view."""
+    """List of dicts describing the field available in that step's sample view."""
     step_properties = AttributeListDescriptor('step-property', nesting=['step-properties'])
-    """List of dict describing the properties of this step."""
+    """List of dicts describing the properties of this step."""
     epp_triggers = AttributeListDescriptor('epp-trigger', nesting=['epp-triggers'])
-    """List of dict describing the EPP trigger attached to this step."""
+    """List of dicts describing the EPP trigger attached to this step."""
 
     @property
     def queue(self):
@@ -997,9 +992,9 @@ class Protocol(Entity):
     _TAG = 'protocol'
 
     steps = EntityListDescriptor('step', ProtocolStep, nesting=['steps'])
-    """List of :py:class:`step <pyclarity_lims.entities.ProtocolStep>`"""
+    """List of :py:class:`steps <pyclarity_lims.entities.ProtocolStep>`"""
     properties = AttributeListDescriptor('protocol-property', nesting=['protocol-properties'])
-    """List of dict describing the protocol's property."""
+    """List of dicts describing the protocol's property."""
 
 
 class Stage(Entity):
@@ -1012,12 +1007,12 @@ class Stage(Entity):
     """:py:class:`Protocol <pyclarity_lims.entities.Protocol>` associated with this stage."""
     step = EntityDescriptor('step', ProtocolStep)
     """:py:class:`Step <pyclarity_lims.entities.ProtocolStep>` associated with this stage."""
-    workflow = None # See bottom of the file
+    workflow = None  # See bottom of the file
     """:py:class:`Workflow <pyclarity_lims.entities.Workflow>` associated with the stage."""
 
 
 class Workflow(Entity):
-    """ Workflow, introduced in 3.5"""
+    """Workflow, introduced in 3.5"""
     _URI = "configuration/workflows"
     _TAG = "workflow"
 
@@ -1026,13 +1021,13 @@ class Workflow(Entity):
     status = StringAttributeDescriptor("status")
     """Status of the workflow."""
     protocols = EntityListDescriptor('protocol', Protocol, nesting=['protocols'])
-    """List of :py:class:`protocol <pyclarity_lims.entities.Protocol>` associated with this workflow."""
+    """List of :py:class:`protocols <pyclarity_lims.entities.Protocol>` associated with this workflow."""
     stages = EntityListDescriptor('stage', Stage, nesting=['stages'])
-    """List of :py:class:`stage <pyclarity_lims.entities.Stage>` associated with this workflow."""
+    """List of :py:class:`stages <pyclarity_lims.entities.Stage>` associated with this workflow."""
 
 
 class ReagentType(Entity):
-    """Reagent Type, usually, indexes for sequencing"""
+    """Reagent Type, usually indexes for sequencing"""
     _URI = "reagenttypes"
     _TAG = "reagent-type"
     _PREFIX = 'rtp'
@@ -1046,28 +1041,28 @@ class ReagentType(Entity):
         self.root = lims.get(self.uri)
         self.sequence = None
         for t in self.root.findall('special-type'):
-            if t.attrib.get("name") == "Index":
-                for child in t.findall("attribute"):
-                    if child.attrib.get("name") == "Sequence":
-                        self.sequence = child.attrib.get("value")
+            if t.attrib.get('name') == 'Index':
+                for child in t.findall('attribute'):
+                    if child.attrib.get('name') == 'Sequence':
+                        self.sequence = child.attrib.get('value')
 
 
 class Queue(Entity):
     """Queue of a given workflow stage"""
-    _URI = "queues"
-    _TAG= "queue"
-    _PREFIX = "que"
+    _URI = 'queues'
+    _TAG = 'queue'
+    _PREFIX = 'que'
 
     queued_artifacts = MutableDescriptor(QueuedArtifactList)
     """
-    List of :py:class:`artifacts <pyclarity_lims.entities.Artifact>` associated with this workflow stage.
-    alongside the time the've been added to that queue and the container they're in.
-    The list contains tuples organise as follow:
-        (A, B, (C, D)) where
-         A is an :py:class:`artifacts <pyclarity_lims.entities.Artifact>`
-         B is a :py:class:`datetime <datetime.datetime>` object,
-         C is a :py:class:`container <pyclarity_lims.entities.Container>`
-         D is a string specifying the location such as "1:1"
+    List of :py:class:`artifacts <pyclarity_lims.entities.Artifact>` associated with this workflow stage
+    alongside the time they've been added to that queue and the container they're in.
+    The list contains tuples organised in the form (A, B, (C, D)), where:
+
+         - A is an :py:class:`artifact <pyclarity_lims.entities.Artifact>`
+         - B is a :py:class:`datetime <datetime.datetime>` object,
+         - C is a :py:class:`container <pyclarity_lims.entities.Container>`
+         - D is a string specifying the location such as "1:1"
     """
 
     @property

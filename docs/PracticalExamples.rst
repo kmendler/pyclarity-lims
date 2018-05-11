@@ -4,8 +4,8 @@ Practical Examples
 Change value of a UDF of all artifacts of a Step in progress
 ------------------------------------------------------------
 
-The goal of this example is to show how you could change the value of a UDF named udfname in all input artifacts.
-This example assume you have a :py:class:`Lims <pyclarity_lims.lims.Lims>` and a process id.
+The goal of this example is to show how you can change the value of a UDF named udfname in all input artifacts.
+This example assumes you have a :py:class:`Lims <pyclarity_lims.lims.Lims>` and a process id.
 
 .. code::
 
@@ -18,12 +18,12 @@ This example assume you have a :py:class:`Lims <pyclarity_lims.lims.Lims>` and a
             # upload the artifact back to the Lims
             artifact.put()
 
-In some cases we want to optimise the number of query sent to the LIMS and make use of the batched query the API offers.
+In some cases we want to optimise the number of queries sent to the LIMS and make use of the batched query the API offers.
 
 .. code::
 
         p = Process(l, id=process_id)
-        # This time we create all the Artifacts entities and use the batch query to retrieve the content
+        # This time we create all the Artifact entities and use the batch query to retrieve the content
         # then iterate over them
         for artifact in p.all_inputs(resolve=True):
             artifact.udf['udfname'] = 'udfvalue'
@@ -32,7 +32,7 @@ In some cases we want to optimise the number of query sent to the LIMS and make 
 
 .. note::
 
-        the batch queries are ususally faster than the equivalent multiple individual queries.
+        A batch query is usually faster than the equivalent number of individual queries.
         However the gain seems very variable and is not as high as one might expect.
 
 Find all the samples that went through a Step with a specific udf value
@@ -54,7 +54,7 @@ Make sure to have the up-to-date program status
 -----------------------------------------------
 
 Because all the entities are cached, sometime the Entities get out of date especially
-when the data in the LIMS  is changing rapidly: like the status of a running program.
+when the data in the LIMS is changing rapidly, like the status of a running program.
 
 .. code::
 
@@ -71,7 +71,7 @@ but can be used explicitly with the force option to bypass the cache and retriev
 Create sample with a Specific udfs
 ----------------------------------
 
-So far we always retrieve entities from the LIMS and in some case modified them before uploading them back.
+So far we have only retrieved entities from the LIMS and in some case modified them before uploading them back.
 We can also create some of these entities and upload them to the LIMS.
 Here is how to create a sample with a specific udf.
 
@@ -81,9 +81,9 @@ Here is how to create a sample with a specific udf.
 
 
 Start and complete a new Step from submitted samples
----------------------------------------
+----------------------------------------------------
 
-Creating a step, filling in the placement and the next actions then completing the step
+Creating a step, filling in the placements and the next actions, then completing the step
 can be very convenient when you want to automate the execution of part of your workflow.
 Here is an example with one sample placed into a tube.
 
@@ -109,10 +109,10 @@ Here is an example with one sample placed into a tube.
         output_art = s.details.input_output_maps[0][1]['uri']
 
         # Place the output artifact in the container
-        # Note that the placements is a list of tuple ( A, ( B, C ) )
-        # Where A is output artifact, B the output Container and C the location on this container
+        # Note that the placements is a list of tuples ( A, ( B, C ) ), where A is the output artifact,
+        # B is the output Container and C is the location on this container
         output_placement_list=[(output_art, (c, '1:1'))]
-        # set_placements creates the placement entity and "put" it
+        # set_placements creates the placement entity and "put"s it
         s.set_placements([c], output_placement_list)
 
         # Move from "Record detail" window to the "Next Step"
