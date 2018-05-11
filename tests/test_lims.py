@@ -1,5 +1,7 @@
 from unittest import TestCase
 from requests.exceptions import HTTPError
+
+from pyclarity_lims.entities import Sample
 from pyclarity_lims.lims import Lims
 try:
     callable(1)
@@ -143,3 +145,58 @@ class TestLims(TestCase):
         assert lims.get_file_contents(id='an_id', encoding='utf-16', crlf=True) == 'some data\n'
         assert lims.request_session.get.return_value.encoding == 'utf-16'
         lims.request_session.get.assert_called_with(exp_url, auth=(self.username, self.password), timeout=16)
+
+    def test_get_instances(self):
+        lims = Lims(self.url, username=self.username, password=self.password)
+        sample_xml_template = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <smp:samples xmlns:smp="http://pyclarity_lims.com/ri/sample">
+            <sample uri="{url}/api/v2/samples/{s1}" limsid="{s1}"/>
+            <sample uri="{url}/api/v2/samples/{s2}" limsid="{s2}"/>
+            {next_page}
+        </smp:samples>
+        """
+        sample_xml1 = sample_xml_template.format(
+            s1='sample1', s2='sample2',
+            url=self.url,
+            next_page='<next-page uri="{url}/api/v2/samples?start-index=3"/>'.format(url=self.url)
+        )
+        sample_xml2 = sample_xml_template.format(
+            s1='sample3', s2='sample4',
+            url=self.url,
+            next_page='<next-page uri="{url}/api/v2/samples?start-index=5"/>'.format(url=self.url)
+        )
+        sample_xml3 = sample_xml_template.format(
+            s1='sample5', s2='sample6',
+            url=self.url,
+            next_page=''
+        )
+        get_returns = [
+            Mock(content=sample_xml1, status_code=200),
+            Mock(content=sample_xml2, status_code=200),
+            Mock(content=sample_xml3, status_code=200)
+        ]
+
+        with patch('requests.Session.get', side_effect=get_returns) as mget:
+            samples = lims._get_instances(Sample, nb_page=2, params={'projectname': 'p1'})
+            assert len(samples) == 4
+            assert mget.call_count == 2
+            mget.assert_any_call(
+                'http://testgenologics.com:4040/api/v2/samples',
+                auth=('test', 'password'),
+                headers={'accept': 'application/xml'},
+                params={'projectname': 'p1'},
+                timeout=16
+            )
+            mget.assert_called_with(
+                'http://testgenologics.com:4040/api/v2/samples?start-index=3',
+                auth=('test', 'password'),
+                headers={'accept': 'application/xml'},
+                params={'projectname': 'p1'},
+                timeout=16
+            )
+
+        with patch('requests.Session.get', side_effect=get_returns) as mget:
+            samples = lims._get_instances(Sample, nb_page=-1, params={'projectname': 'p1'})
+            assert len(samples) == 6
+            assert mget.call_count == 3
+
