@@ -221,7 +221,7 @@ class Lims(object):
                                    then you need to set attach_to_category='ProcessType'. Must not be provided otherwise.
         :param start_index: first element to retrieve; start at first element if None.
         :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
-                        in your LIMS. -1 returns all pages.
+                        in your LIMS. 0 or negative numbers returns all pages.
         :param add_info: Change the return type to a tuple where the first element is normal return and
                          the second is a dict of additional information provided in the query.
         """
@@ -238,7 +238,7 @@ class Lims(object):
         :param name: Reagent type name, or list of names.
         :param start_index: first element to retrieve; start at first element if None.
         :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
-                        in your LIMS. -1 returns all pages.
+                        in your LIMS. 0 or negative numbers returns all pages.
         """
         params = self._get_params(name=name,
                                   start_index=start_index)
@@ -256,7 +256,7 @@ class Lims(object):
                     and a string or list of strings as value.
         :param start_index: first element to retrieve; start at first element if None.
         :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
-                        in your LIMS. -1 returns all pages.
+                        in your LIMS. 0 or negative numbers returns all pages.
         :param add_info: Change the return type to a tuple where the first element is normal return and
                          the second is a dict of additional information provided in the query.
         """
@@ -282,7 +282,7 @@ class Lims(object):
                     and a string or list of strings as value.
         :param start_index: first element to retrieve; start at first element if None.
         :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
-                        in your LIMS. -1 returns all pages.
+                        in your LIMS. 0 or negative numbers returns all pages.
         :param add_info: Change the return type to a tuple where the first element is normal return and
                          the second is a dict of additional information provided in the query.
 
@@ -309,7 +309,7 @@ class Lims(object):
                     and a string or list of strings as value.
         :param start_index: first element to retrieve; start at first element if None.
         :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
-                        in your LIMS. -1 returns all pages.
+                        in your LIMS. 0 or negative numbers returns all pages.
         :param add_info: Change the return type to a tuple where the first element is normal return and
                          the second is a dict of additional information provided in the query.
 
@@ -356,7 +356,7 @@ class Lims(object):
                     and a string or list of strings as value.
         :param start_index: first element to retrieve; start at first element if None.
         :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
-                        in your LIMS. -1 returns all pages.
+                        in your LIMS. 0 or negative numbers returns all pages.
         """
         params = self._get_params(name=name,
                                   projectname=projectname,
@@ -391,7 +391,7 @@ class Lims(object):
                     and a string or list of strings as value.
         :param start_index: first element to retrieve; start at first element if None.
         :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
-                        in your LIMS. -1 returns all pages.
+                        in your LIMS. 0 or negative numbers returns all pages.
         :param resolve: Send a batch query to the lims to get the content of all artifacts retrieved
         """
         params = self._get_params(name=name,
@@ -429,7 +429,7 @@ class Lims(object):
                     and a string or list of strings as value.
         :param start_index: first element to retrieve; start at first element if None.
         :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
-                        in your LIMS. -1 returns all pages.
+                        in your LIMS. 0 or negative numbers returns all pages.
         :param add_info: Change the return type to a tuple where the first element is normal return and
                          the second is a dict of additional information provided in the query.
         """
@@ -447,7 +447,7 @@ class Lims(object):
         :param name: name of the container type or list of names.
         :param start_index: first element to retrieve; start at first element if None.
         :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
-                        in your LIMS. -1 returns all pages.
+                        in your LIMS. 0 or negative numbers returns all pages.
         :param add_info: Change the return type to a tuple where the first element is normal return and
                          the second is a dict of additional information provided in the query.
         """
@@ -472,7 +472,7 @@ class Lims(object):
         :param projectname: Name of project, or list of.
         :param start_index: first element to retrieve; start at first element if None.
         :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
-                        in your LIMS. -1 returns all pages.
+                        in your LIMS. 0 or negative numbers returns all pages.
         """
         params = self._get_params(last_modified=last_modified,
                                   type=type,
@@ -538,7 +538,7 @@ class Lims(object):
         :param name: reagent kit  name, or list of names.
         :param start_index: first element to retrieve; start at first element if None.
         :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
-                        in your LIMS. -1 returns all pages.
+                        in your LIMS. 0 or negative numbers returns all pages.
         :param add_info: Change the return type to a tuple where the first element is normal return and
                          the second is a dict of additional information provided in the query.
 
@@ -556,7 +556,7 @@ class Lims(object):
         :param number: lot number or list of lot number
         :param start_index: first element to retrieve; start at first element if None.
         :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
-                        in your LIMS. -1 returns all pages.
+                        in your LIMS. 0 or negative numbers returns all pages.
         """
         params = self._get_params(name=name, kitname=kitname, number=number,
                                   start_index=start_index)
