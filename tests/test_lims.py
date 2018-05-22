@@ -177,7 +177,7 @@ class TestLims(TestCase):
         ]
 
         with patch('requests.Session.get', side_effect=get_returns) as mget:
-            samples = lims._get_instances(Sample, nb_page=2, params={'projectname': 'p1'})
+            samples = lims._get_instances(Sample, nb_pages=2, params={'projectname': 'p1'})
             assert len(samples) == 4
             assert mget.call_count == 2
             mget.assert_any_call(
@@ -196,12 +196,12 @@ class TestLims(TestCase):
             )
 
         with patch('requests.Session.get', side_effect=get_returns) as mget:
-            samples = lims._get_instances(Sample, nb_page=0)
+            samples = lims._get_instances(Sample, nb_pages=0)
             assert len(samples) == 6
             assert mget.call_count == 3
 
         with patch('requests.Session.get', side_effect=get_returns) as mget:
-            samples = lims._get_instances(Sample, nb_page=-1)
+            samples = lims._get_instances(Sample, nb_pages=-1)
             assert len(samples) == 6
             assert mget.call_count == 3
 

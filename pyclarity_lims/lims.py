@@ -210,7 +210,7 @@ class Lims(object):
         root = ElementTree.fromstring(response.content)
         return root
 
-    def get_udfs(self, name=None, attach_to_name=None, attach_to_category=None, start_index=None, nb_page=-1,
+    def get_udfs(self, name=None, attach_to_name=None, attach_to_category=None, start_index=None, nb_pages=-1,
                  add_info=False):
         """Get a list of udfs, filtered by keyword arguments.
 
@@ -220,7 +220,7 @@ class Lims(object):
         :param attach_to_category: If 'attach_to_name' is the name of a process, such as 'CaliperGX QC (DNA)',
                                    then you need to set attach_to_category='ProcessType'. Must not be provided otherwise.
         :param start_index: first element to retrieve; start at first element if None.
-        :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
+        :param nb_pages: number of page to iterate over. The page size is 500 by default unless configured otherwise
                         in your LIMS. 0 or negative numbers returns all pages.
         :param add_info: Change the return type to a tuple where the first element is normal return and
                          the second is a dict of additional information provided in the query.
@@ -229,23 +229,23 @@ class Lims(object):
                                   attach_to_name=attach_to_name,
                                   attach_to_category=attach_to_category,
                                   start_index=start_index)
-        return self._get_instances(Udfconfig, add_info=add_info, nb_page=nb_page, params=params)
+        return self._get_instances(Udfconfig, add_info=add_info, nb_pages=nb_pages, params=params)
 
-    def get_reagent_types(self, name=None, start_index=None, nb_page=-1):
+    def get_reagent_types(self, name=None, start_index=None, nb_pages=-1):
         """
         Get a list of reagent types, filtered by keyword arguments.
 
         :param name: Reagent type name, or list of names.
         :param start_index: first element to retrieve; start at first element if None.
-        :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
+        :param nb_pages: number of page to iterate over. The page size is 500 by default unless configured otherwise
                         in your LIMS. 0 or negative numbers returns all pages.
         """
         params = self._get_params(name=name,
                                   start_index=start_index)
-        return self._get_instances(ReagentType, nb_page=nb_page, params=params)
+        return self._get_instances(ReagentType, nb_pages=nb_pages, params=params)
 
     def get_labs(self, name=None, last_modified=None,
-                 udf=dict(), udtname=None, udt=dict(), start_index=None, nb_page=-1, add_info=False):
+                 udf=dict(), udtname=None, udt=dict(), start_index=None, nb_pages=-1, add_info=False):
         """Get a list of labs, filtered by keyword arguments.
 
         :param name: Lab name, or list of names.
@@ -255,7 +255,7 @@ class Lims(object):
         :param udt: dictionary of UDT UDFs with 'UDTNAME.UDFNAME[OPERATOR]' as keys
                     and a string or list of strings as value.
         :param start_index: first element to retrieve; start at first element if None.
-        :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
+        :param nb_pages: number of page to iterate over. The page size is 500 by default unless configured otherwise
                         in your LIMS. 0 or negative numbers returns all pages.
         :param add_info: Change the return type to a tuple where the first element is normal return and
                          the second is a dict of additional information provided in the query.
@@ -264,11 +264,11 @@ class Lims(object):
                                   last_modified=last_modified,
                                   start_index=start_index)
         params.update(self._get_params_udf(udf=udf, udtname=udtname, udt=udt))
-        return self._get_instances(Lab, add_info=add_info, nb_page=nb_page, params=params)
+        return self._get_instances(Lab, add_info=add_info, nb_pages=nb_pages, params=params)
 
     def get_researchers(self, firstname=None, lastname=None, username=None,
                         last_modified=None,
-                        udf=dict(), udtname=None, udt=dict(), start_index=None, nb_page=-1,
+                        udf=dict(), udtname=None, udt=dict(), start_index=None, nb_pages=-1,
                         add_info=False):
         """Get a list of researchers, filtered by keyword arguments.
 
@@ -281,7 +281,7 @@ class Lims(object):
         :param udt: dictionary of UDT UDFs with 'UDTNAME.UDFNAME[OPERATOR]' as keys
                     and a string or list of strings as value.
         :param start_index: first element to retrieve; start at first element if None.
-        :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
+        :param nb_pages: number of page to iterate over. The page size is 500 by default unless configured otherwise
                         in your LIMS. 0 or negative numbers returns all pages.
         :param add_info: Change the return type to a tuple where the first element is normal return and
                          the second is a dict of additional information provided in the query.
@@ -293,10 +293,10 @@ class Lims(object):
                                   last_modified=last_modified,
                                   start_index=start_index)
         params.update(self._get_params_udf(udf=udf, udtname=udtname, udt=udt))
-        return self._get_instances(Researcher, add_info=add_info, nb_page=nb_page, params=params)
+        return self._get_instances(Researcher, add_info=add_info, nb_pages=nb_pages, params=params)
 
     def get_projects(self, name=None, open_date=None, last_modified=None,
-                     udf=dict(), udtname=None, udt=dict(), start_index=None, nb_page=-1,
+                     udf=dict(), udtname=None, udt=dict(), start_index=None, nb_pages=-1,
                      add_info=False):
         """Get a list of projects, filtered by keyword arguments.
 
@@ -308,7 +308,7 @@ class Lims(object):
         :param udt: dictionary of UDT UDFs with 'UDTNAME.UDFNAME[OPERATOR]' as keys
                     and a string or list of strings as value.
         :param start_index: first element to retrieve; start at first element if None.
-        :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
+        :param nb_pages: number of page to iterate over. The page size is 500 by default unless configured otherwise
                         in your LIMS. 0 or negative numbers returns all pages.
         :param add_info: Change the return type to a tuple where the first element is normal return and
                          the second is a dict of additional information provided in the query.
@@ -319,10 +319,10 @@ class Lims(object):
                                   last_modified=last_modified,
                                   start_index=start_index)
         params.update(self._get_params_udf(udf=udf, udtname=udtname, udt=udt))
-        return self._get_instances(Project, add_info=add_info, nb_page=nb_page, params=params)
+        return self._get_instances(Project, add_info=add_info, nb_pages=nb_pages, params=params)
 
     def get_sample_number(self, name=None, projectname=None, projectlimsid=None,
-                          udf=dict(), udtname=None, udt=dict(), start_index=None, nb_page=-1):
+                          udf=dict(), udtname=None, udt=dict(), start_index=None, nb_pages=-1):
         """
         Gets the number of samples matching the query without fetching every
         sample, so it should be faster than len(get_samples())
@@ -344,7 +344,7 @@ class Lims(object):
         return total
 
     def get_samples(self, name=None, projectname=None, projectlimsid=None,
-                    udf=dict(), udtname=None, udt=dict(), start_index=None, nb_page=-1):
+                    udf=dict(), udtname=None, udt=dict(), start_index=None, nb_pages=-1):
         """Get a list of samples, filtered by keyword arguments.
 
         :param name: Sample name, or list of names.
@@ -355,7 +355,7 @@ class Lims(object):
         :param udt: dictionary of UDT UDFs with 'UDTNAME.UDFNAME[OPERATOR]' as keys
                     and a string or list of strings as value.
         :param start_index: first element to retrieve; start at first element if None.
-        :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
+        :param nb_pages: number of page to iterate over. The page size is 500 by default unless configured otherwise
                         in your LIMS. 0 or negative numbers returns all pages.
         """
         params = self._get_params(name=name,
@@ -363,13 +363,13 @@ class Lims(object):
                                   projectlimsid=projectlimsid,
                                   start_index=start_index)
         params.update(self._get_params_udf(udf=udf, udtname=udtname, udt=udt))
-        return self._get_instances(Sample, nb_page=nb_page, params=params)
+        return self._get_instances(Sample, nb_pages=nb_pages, params=params)
 
     def get_artifacts(self, name=None, type=None, process_type=None,
                       artifact_flag_name=None, working_flag=None, qc_flag=None,
                       sample_name=None, samplelimsid=None, artifactgroup=None, containername=None,
                       containerlimsid=None, reagent_label=None,
-                      udf=dict(), udtname=None, udt=dict(), start_index=None, nb_page=-1,
+                      udf=dict(), udtname=None, udt=dict(), start_index=None, nb_pages=-1,
                       resolve=False):
         """Get a list of artifacts, filtered by keyword arguments.
 
@@ -390,7 +390,7 @@ class Lims(object):
         :param udt: dictionary of UDT UDFs with 'UDTNAME.UDFNAME[OPERATOR]' as keys
                     and a string or list of strings as value.
         :param start_index: first element to retrieve; start at first element if None.
-        :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
+        :param nb_pages: number of page to iterate over. The page size is 500 by default unless configured otherwise
                         in your LIMS. 0 or negative numbers returns all pages.
         :param resolve: Send a batch query to the lims to get the content of all artifacts retrieved
         """
@@ -409,13 +409,13 @@ class Lims(object):
                                   start_index=start_index)
         params.update(self._get_params_udf(udf=udf, udtname=udtname, udt=udt))
         if resolve:
-            return self.get_batch(self._get_instances(Artifact, nb_page=nb_page, params=params))
+            return self.get_batch(self._get_instances(Artifact, nb_pages=nb_pages, params=params))
         else:
-            return self._get_instances(Artifact, nb_page=nb_page, params=params)
+            return self._get_instances(Artifact, nb_pages=nb_pages, params=params)
 
     def get_containers(self, name=None, type=None,
                        state=None, last_modified=None,
-                       udf=dict(), udtname=None, udt=dict(), start_index=None, nb_page=-1,
+                       udf=dict(), udtname=None, udt=dict(), start_index=None, nb_pages=-1,
                        add_info=False):
         """Get a list of containers, filtered by keyword arguments.
 
@@ -428,7 +428,7 @@ class Lims(object):
         :param udt: dictionary of UDT UDFs with 'UDTNAME.UDFNAME[OPERATOR]' as keys
                     and a string or list of strings as value.
         :param start_index: first element to retrieve; start at first element if None.
-        :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
+        :param nb_pages: number of page to iterate over. The page size is 500 by default unless configured otherwise
                         in your LIMS. 0 or negative numbers returns all pages.
         :param add_info: Change the return type to a tuple where the first element is normal return and
                          the second is a dict of additional information provided in the query.
@@ -439,25 +439,25 @@ class Lims(object):
                                   last_modified=last_modified,
                                   start_index=start_index)
         params.update(self._get_params_udf(udf=udf, udtname=udtname, udt=udt))
-        return self._get_instances(Container, add_info=add_info, nb_page=nb_page, params=params)
+        return self._get_instances(Container, add_info=add_info, nb_pages=nb_pages, params=params)
 
-    def get_container_types(self, name=None, start_index=None, nb_page=-1, add_info=False):
+    def get_container_types(self, name=None, start_index=None, nb_pages=-1, add_info=False):
         """Get a list of container types, filtered by keyword arguments.
 
         :param name: name of the container type or list of names.
         :param start_index: first element to retrieve; start at first element if None.
-        :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
+        :param nb_pages: number of page to iterate over. The page size is 500 by default unless configured otherwise
                         in your LIMS. 0 or negative numbers returns all pages.
         :param add_info: Change the return type to a tuple where the first element is normal return and
                          the second is a dict of additional information provided in the query.
         """
         params = self._get_params(name=name, start_index=start_index)
-        return self._get_instances(Containertype, add_info=add_info, nb_page=nb_page, params=params)
+        return self._get_instances(Containertype, add_info=add_info, nb_pages=nb_pages, params=params)
 
     def get_processes(self, last_modified=None, type=None,
                       inputartifactlimsid=None,
                       techfirstname=None, techlastname=None, projectname=None,
-                      udf=dict(), udtname=None, udt=dict(), start_index=None, nb_page=-1):
+                      udf=dict(), udtname=None, udt=dict(), start_index=None, nb_pages=-1):
         """Get a list of processes, filtered by keyword arguments.
 
         :param last_modified: Since the given ISO format datetime.
@@ -471,7 +471,7 @@ class Lims(object):
         :param techlastname: Last name of researcher, or list of.
         :param projectname: Name of project, or list of.
         :param start_index: first element to retrieve; start at first element if None.
-        :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
+        :param nb_pages: number of page to iterate over. The page size is 500 by default unless configured otherwise
                         in your LIMS. 0 or negative numbers returns all pages.
         """
         params = self._get_params(last_modified=last_modified,
@@ -482,7 +482,7 @@ class Lims(object):
                                   projectname=projectname,
                                   start_index=start_index)
         params.update(self._get_params_udf(udf=udf, udtname=udtname, udt=udt))
-        return self._get_instances(Process, nb_page=nb_page, params=params)
+        return self._get_instances(Process, nb_pages=nb_pages, params=params)
 
     def get_workflows(self, name=None, add_info=False):
         """
@@ -532,12 +532,12 @@ class Lims(object):
         params = self._get_params(name=name)
         return self._get_instances(Protocol, add_info=add_info, params=params)
 
-    def get_reagent_kits(self, name=None, start_index=None, nb_page=-1, add_info=False):
+    def get_reagent_kits(self, name=None, start_index=None, nb_pages=-1, add_info=False):
         """Get a list of reagent kits, filtered by keyword arguments.
 
         :param name: reagent kit  name, or list of names.
         :param start_index: first element to retrieve; start at first element if None.
-        :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
+        :param nb_pages: number of page to iterate over. The page size is 500 by default unless configured otherwise
                         in your LIMS. 0 or negative numbers returns all pages.
         :param add_info: Change the return type to a tuple where the first element is normal return and
                          the second is a dict of additional information provided in the query.
@@ -545,22 +545,22 @@ class Lims(object):
         """
         params = self._get_params(name=name,
                                   start_index=start_index)
-        return self._get_instances(ReagentKit, add_info=add_info, nb_page=nb_page, params=params)
+        return self._get_instances(ReagentKit, add_info=add_info, nb_pages=nb_pages, params=params)
 
     def get_reagent_lots(self, name=None, kitname=None, number=None,
-                         start_index=None, nb_page=-1):
+                         start_index=None, nb_pages=-1):
         """Get a list of reagent lots, filtered by keyword arguments.
 
         :param name: reagent kit  name, or list of names.
         :param kitname: name of the kit this lots belong to
         :param number: lot number or list of lot number
         :param start_index: first element to retrieve; start at first element if None.
-        :param nb_page: number of page to iterate over. The page size is 500 by default unless configured otherwise
+        :param nb_pages: number of page to iterate over. The page size is 500 by default unless configured otherwise
                         in your LIMS. 0 or negative numbers returns all pages.
         """
         params = self._get_params(name=name, kitname=kitname, number=number,
                                   start_index=start_index)
-        return self._get_instances(ReagentLot, nb_page=nb_page, params=params)
+        return self._get_instances(ReagentLot, nb_pages=nb_pages, params=params)
 
     def _get_params(self, **kwargs):
         """Convert keyword arguments to a kwargs dictionary."""
@@ -582,7 +582,7 @@ class Lims(object):
             result["udt.%s" % key] = value
         return result
 
-    def _get_instances(self, klass, add_info=None, nb_page=-1, params=dict()):
+    def _get_instances(self, klass, add_info=None, nb_pages=-1, params=dict()):
         results = []
         additionnal_info_dicts = []
         tag = klass._TAG
@@ -590,7 +590,7 @@ class Lims(object):
             tag = klass.__name__.lower()
         root = self.get(self.get_uri(klass._URI), params=params)
         while root:  # Loop over all requested pages.
-            nb_page -= 1
+            nb_pages -= 1
             for node in root.findall(tag):
                 results.append(klass(self, uri=node.attrib['uri']))
                 info_dict = {}
@@ -600,7 +600,7 @@ class Lims(object):
                     info_dict[subnode.tag] = subnode.text
                 additionnal_info_dicts.append(info_dict)
             node = root.find('next-page')
-            if node is None or nb_page == 0:
+            if node is None or nb_pages == 0:
                 root = None
             else:
                 root = self.get(node.attrib['uri'], params=params)
