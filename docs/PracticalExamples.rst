@@ -130,11 +130,11 @@ Mix samples in a pool using the api
 -----------------------------------
 
 Some step will allow you to mix multiple input :py:class:`artifacts <pyclarity_lims.entities.Artifact>` into a pool also
-represented by an :py:class:`artifact <pyclarity_lims.entities.Artifact>`.This can be performed using the
+represented by an :py:class:`artifact <pyclarity_lims.entities.Artifact>`. This can be performed using the
 :py:class:`StepPools <pyclarity_lims.entities.StepPools>` entities.
 
-The trick is that the pool :py:class:`artifact <pyclarity_lims.entities.Artifact>` needs to be created in the so we only
-need to provide the pool name.
+Because the pool :py:class:`artifact <pyclarity_lims.entities.Artifact>` needs to be created in the LIMS, we only
+need to provide the pool name and we need to provide `None` in place of the pool
 
 .. code::
 
@@ -152,3 +152,6 @@ need to provide the pool name.
         assert s.pools.available_inputs == []
         # There is a pool artifact created
         assert type(s.pools.pooled_inputs['Pool1'][0]).__name__ == 'Artifact'
+
+        # Now we can advance the step
+        s.advance()
