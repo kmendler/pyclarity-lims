@@ -796,6 +796,14 @@ class StepPools(Entity):
         * an output Artifact containing the pool.
         * a tuple containing the input artifacts for that pool.
     """
+    available_inputs = EntityListDescriptor(tag='input', klass=Artifact, nesting=['available-inputs'])
+    """List of artifact available for pooling. 
+    
+    Note that adding artifacts to a pool will not remove them from this list until put() is run.
+    """
+
+    def put(self):
+        self.root = super(StepPools, self).put()
 
 
 class Step(Entity):

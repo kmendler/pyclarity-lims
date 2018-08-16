@@ -513,10 +513,21 @@ class TestXmlPooledInputDict(TestCase):
     def test___getitem__(self):
         assert self.dict1['pool1'] == (self.out1, (self.in1, self.in2))
 
-    def test___setitem__(self):
+    def test___setitem1__(self):
         assert len(self.dict1) == 2
         assert len(self.dict1.rootnode(self.dict1.instance)) == 2
+        # This works in the test but does not work in reality because
+        # the pool artifact needs to be creaated by the LIMS.
         self.dict1['pool3'] = (self.out1, (self.in1, self.in2))
+        assert len(self.dict1) == 3
+        assert len(self.dict1.rootnode(self.dict1.instance)) == 3
+
+    def test___setitem2__(self):
+        assert len(self.dict1) == 2
+        assert len(self.dict1.rootnode(self.dict1.instance)) == 2
+
+        # This is the correct way of creating a pool from scratch
+        self.dict1['pool3'] = (None, (self.in1, self.in2))
         assert len(self.dict1) == 3
         assert len(self.dict1.rootnode(self.dict1.instance)) == 3
 

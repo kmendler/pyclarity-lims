@@ -124,3 +124,31 @@ Here is an example with one sample placed into a tube.
 
         # Complete the step
         s.advance()
+
+
+Mix samples in a pool using the api
+-----------------------------------
+
+Some step will allow you to mix multiple input :py:class:`artifacts <pyclarity_lims.entities.Artifact>` into a pool also
+represented by an :py:class:`artifact <pyclarity_lims.entities.Artifact>`.This can be performed using the
+:py:class:`StepPools <pyclarity_lims.entities.StepPools>` entities.
+
+The trick is that the pool :py:class:`artifact <pyclarity_lims.entities.Artifact>` needs to be created in the so we only
+need to provide the pool name.
+
+.. code::
+
+        # Assuming a Step in the pooling stage
+        s = Step(l, id='122-12345')
+        # This provides a list of all the artifacts available to pool
+        s.pools.available_inputs
+        # The pooled_inputs is a dict where the key is the name of the pool
+        # the value is a Tuple with first element is the pool artifact and the second if the pooled input
+        # here we're not specifying the pool and will let the LIMS create it.
+        s.pools.pooled_inputs['Pool1'] = (None, tuple(s.pools.available_inputs))
+        # then upload
+        s.pools.put()
+        # There no more input artifacts available
+        assert s.pools.available_inputs == []
+        # There is a pool artifact created
+        assert type(s.pools.pooled_inputs['Pool1'][0]).__name__ == 'Artifact'
