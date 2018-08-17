@@ -490,15 +490,38 @@ class Process(Entity):
         else:
             return [Artifact(self.lims, id=id) for id in ids if id is not None]
 
-    def shared_result_files(self):
-        """Retrieve all output artifacts where output-generation-type is SharedResultFile."""
-        artifacts = self.all_outputs(unique=True)
-        return [a for a in artifacts if a.output_type == 'SharedResultFile']
+    def _output_files(self, resfile, output_generation_type):
+        if output_generation_type:
+            artifacts = [
+                io[1]['uri'] for io in self.input_output_maps
+                if io[1] is not None
+                and io[1]['output-type'] == resfile
+                and io[1]['output-generation-type'] == output_generation_type
+            ]
+        else:
+            artifacts = [
+                io[1]['uri'] for io in self.input_output_maps
+                if io[1] is not None and io[1]['output-type'] == resfile
+            ]
+        return list(set(artifacts))
 
-    def result_files(self):
-        """Retrieve all output artifacts where output-generation-type is ResultFile."""
-        artifacts = self.all_outputs(unique=True)
-        return [a for a in artifacts if a.output_type == 'ResultFile']
+    def shared_result_files(self, output_generation_type=None):
+        """Retrieve all output artifacts where output-type is SharedResultFile.
+
+        :param output_generation_type: string specifying the output-generation-type (PerAllInputs or PerInput)
+        :return: list of output artifacts.
+
+        """
+        return self._output_files('SharedResultFile', output_generation_type)
+
+    def result_files(self, output_generation_type=None):
+        """Retrieve all output artifacts where output-type is ResultFile.
+
+        :param output_generation_type: string specifying the output-generation-type (PerAllInputs or PerInput)
+        :return: list of output artifacts.
+
+        """
+        return self._output_files('ResultFile', output_generation_type)
 
     def analytes(self):
         """Retrieving the output Analytes of the process, if existing.

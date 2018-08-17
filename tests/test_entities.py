@@ -2,7 +2,7 @@ from sys import version_info
 from unittest import TestCase
 from xml.etree import ElementTree
 from pyclarity_lims.entities import ProtocolStep, StepActions, Researcher, Artifact, \
-    Step, StepPlacements, Container, Stage, ReagentKit, ReagentLot, Sample, Project
+    Step, StepPlacements, Container, Stage, ReagentKit, ReagentLot, Sample, Project, Process
 from pyclarity_lims.lims import Lims
 from tests import NamedMock, elements_equal
 if version_info[0] == 2:
@@ -161,6 +161,43 @@ generic_sample_creation_xml = """
   <project uri="{url}/api/v2/projects/p1" limsid="p1">
   </project>
 </smp:samplecreation>
+"""
+
+generic_process_xml = """
+<prc:process xmlns:udf="http://genologics.com/ri/userdefined" xmlns:file="http://genologics.com/ri/file" xmlns:prc="http://genologics.com/ri/process" uri="{url}/api/v2/processes/p2" limsid="p2">
+<type uri="{url}/api/v2/processtypes/pt1">Step Name 5.0</type>
+<date-run>2018-06-12</date-run>
+<technician uri="{url}/api/v2/researchers/1">
+<first-name>Bob</first-name>
+<last-name>Marley</last-name>
+</technician>
+<input-output-map>
+<input post-process-uri="{url}/api/v2/artifacts/a1" uri="{url}/api/v2/artifacts/a1" limsid="a1">
+<parent-process uri="{url}/api/v2/processes/p1" limsid="p1"/>
+</input>
+<output uri="{url}/api/v2/artifacts/ao1" output-generation-type="PerAllInputs" output-type="ResultFile" limsid="ao1"/>
+</input-output-map>
+<input-output-map>
+<input post-process-uri="{url}/api/v2/artifacts/a2" uri="{url}/api/v2/artifacts/a2" limsid="a2">
+<parent-process uri="{url}/api/v2/processes/p1" limsid="p1"/>
+</input>
+<output uri="{url}/api/v2/artifacts/ao1" output-generation-type="PerAllInputs" output-type="ResultFile" limsid="ao1"/>
+</input-output-map>
+<input-output-map>
+<input post-process-uri="{url}/api/v2/artifacts/a1" uri="{url}/api/v2/artifacts/a1" limsid="a1">
+<parent-process uri="{url}/api/v2/processes/p1" limsid="p1"/>
+</input>
+<output uri="{url}/api/v2/artifacts/ao2" output-generation-type="PerInput" output-type="ResultFile" limsid="ao2"/>
+</input-output-map>
+<input-output-map>
+<input post-process-uri="{url}/api/v2/artifacts/a2" uri="{url}/api/v2/artifacts/a2" limsid="a2">
+<parent-process uri="{url}/api/v2/processes/p1" limsid="p1"/>
+</input>
+<output uri="{url}/api/v2/artifacts/ao3" output-generation-type="PerInput" output-type="ResultFile" limsid="ao3"/>
+</input-output-map>
+<udf:field type="Numeric" name="Count">15</udf:field>
+<process-parameter name="parameter1"/>
+</prc:process>
 """
 
 
@@ -430,3 +467,14 @@ class TestSample(TestEntities):
             </location>
             </smp:samplecreation>'''
             assert elements_equal(ElementTree.fromstring(patch_post.call_args_list[0][1]['data']), ElementTree.fromstring(data))
+
+
+class TestProcess(TestEntities):
+    process_xml = generic_process_xml.format(url=url)
+
+    def test_result_files(self):
+        p = Process(uri=self.lims.get_uri('processes', 'p2'), lims=self.lims)
+        with patch('requests.Session.get', return_value=Mock(content=self.process_xml, status_code=200)):
+            assert len(p.result_files()) == 3
+            assert len(p.result_files(output_generation_type='PerAllInputs')) == 1
+            assert len(p.result_files(output_generation_type='PerInput')) == 2
