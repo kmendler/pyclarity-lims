@@ -200,6 +200,9 @@ class Note(Entity):
 class File(Entity):
     """File attached to a project or a sample."""
 
+    _URI = 'files'
+    _PREFIX = 'file'
+
     attached_to = StringDescriptor('attached-to')
     """The uri of the Entity this file is attached to"""
     content_location = StringDescriptor('content-location')
