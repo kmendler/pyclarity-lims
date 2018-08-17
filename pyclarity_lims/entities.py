@@ -491,12 +491,12 @@ class Process(Entity):
             return [Artifact(self.lims, id=id) for id in ids if id is not None]
 
     def shared_result_files(self):
-        """Retrieve all resultfiles of output-generation-type PerAllInputs."""
+        """Retrieve all output artifacts where output-generation-type is SharedResultFile."""
         artifacts = self.all_outputs(unique=True)
         return [a for a in artifacts if a.output_type == 'SharedResultFile']
 
     def result_files(self):
-        """Retrieve all resultfiles of output-generation-type perInput."""
+        """Retrieve all output artifacts where output-generation-type is ResultFile."""
         artifacts = self.all_outputs(unique=True)
         return [a for a in artifacts if a.output_type == 'ResultFile']
 
