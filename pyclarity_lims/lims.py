@@ -231,7 +231,7 @@ class Lims(object):
                                   start_index=start_index)
         return self._get_instances(Udfconfig, add_info=add_info, nb_pages=nb_pages, params=params)
 
-    def get_reagent_types(self, name=None, start_index=None, nb_pages=-1):
+    def get_reagent_types(self, name=None, start_index=None, nb_pages=-1, add_info=False):
         """
         Get a list of reagent types, filtered by keyword arguments.
 
@@ -239,10 +239,12 @@ class Lims(object):
         :param start_index: first element to retrieve; start at first element if None.
         :param nb_pages: number of page to iterate over. The page size is 500 by default unless configured otherwise
                         in your LIMS. 0 or negative numbers returns all pages.
+        :param add_info: Change the return type to a tuple where the first element is normal return and
+                        the second is a dict of additional information provided in the query.
+
         """
-        params = self._get_params(name=name,
-                                  start_index=start_index)
-        return self._get_instances(ReagentType, nb_pages=nb_pages, params=params)
+        params = self._get_params(name=name, start_index=start_index)
+        return self._get_instances(ReagentType, nb_pages=nb_pages, add_info=add_info, params=params)
 
     def get_labs(self, name=None, last_modified=None,
                  udf=dict(), udtname=None, udt=dict(), start_index=None, nb_pages=-1, add_info=False):
@@ -507,18 +509,6 @@ class Lims(object):
         """
         params = self._get_params(displayname=displayname)
         return self._get_instances(Processtype, add_info=add_info, params=params)
-
-    def get_reagent_types(self, name=None, add_info=False):
-        """
-       Get a list of reagent types with the specified name.
-
-       :param name: The name the reagent type
-       :param add_info: Change the return type to a tuple where the first element is normal return and
-                        the second is a dict of additional information provided in the query.
-
-       """
-        params = self._get_params(name=name)
-        return self._get_instances(ReagentType, add_info=add_info, params=params)
 
     def get_protocols(self, name=None, add_info=False):
         """
