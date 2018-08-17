@@ -382,7 +382,7 @@ class Process(Entity):
     _CREATION_PREFIX = 'prx'
 
     type = EntityDescriptor('type', Processtype)
-    """The :py:class:`type <pyclarity_lims.entities.ProcessType>` of the process"""
+    """The :py:class:`type <pyclarity_lims.entities.Processtype>` of the process"""
     date_run = StringDescriptor('date-run')
     """The date at which the process was finished in format Year-Month-Day i.e. 2016-12-05."""
     technician = EntityDescriptor('technician', Researcher)
@@ -410,7 +410,10 @@ class Process(Entity):
 
     """
     udf = UdfDictionaryDescriptor()
-    """Dictionary of UDFs associated with the process."""
+    """Dictionary of UDFs associated with the process. 
+    
+    Note that the UDFs cannot be modify in Process. Use :py:class:`Step details <pyclarity_lims.entities.StepDetails>`
+    to modify UDFs instead. You can access them with process.step.details.udf"""
     udt = UdtDictionaryDescriptor()
     """Dictionary of UDTs associated with the process."""
     files = EntityListDescriptor(nsmap('file:file'), File)
