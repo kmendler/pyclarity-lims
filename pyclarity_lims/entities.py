@@ -420,13 +420,17 @@ class Process(Entity):
     def outputs_per_input(self, inart, ResultFile=False, SharedResultFile=False, Analyte=False):
         """Getting all the output artifacts related to a particular input artifact
 
-        :param inart: input artifact id use to select the output
+        :param inart: input artifact id or artifact entity use to select the output
         :param ResultFile: boolean specifying to only return ResultFiles.
         :param SharedResultFile: boolean specifying to only return SharedResultFiles.
         :param Analyte: boolean specifying to only return Analytes.
         :return: output artifact corresponding to the input artifact provided
         """
-        inouts = [io for io in self.input_output_maps if io[0]['limsid'] == inart]
+        if isinstance(Artifact, inart):
+            inouts = [io for io in self.input_output_maps if io[0]['uri'] == inart]
+        else:
+            inouts = [io for io in self.input_output_maps if io[0]['limsid'] == inart]
+
         if ResultFile:
             inouts = [io for io in inouts if io[1]['output-type'] == 'ResultFile']
         elif SharedResultFile:
