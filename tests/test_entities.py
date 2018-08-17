@@ -419,14 +419,17 @@ class TestSample(TestEntities):
                 container=Container(self.lims, uri='container'),
                 position='1:1',
                 name='s1',
+                udf={'test1': 'test1value'}
             )
             data = '''<?xml version=\'1.0\' encoding=\'utf-8\'?>
-            <smp:samplecreation xmlns:smp="http://genologics.com/ri/sample">
+            <smp:samplecreation xmlns:smp="http://genologics.com/ri/sample" xmlns:udf="http://genologics.com/ri/userdefined">
             <name>s1</name>
             <project uri="project" />
             <location>
               <container uri="container" />
               <value>1:1</value>
             </location>
+            <udf:field name="test1" type="String">test1value</udf:field>
             </smp:samplecreation>'''
+            print(patch_post.call_args_list[0][1]['data'])
             assert elements_equal(ElementTree.fromstring(patch_post.call_args_list[0][1]['data']), ElementTree.fromstring(data))

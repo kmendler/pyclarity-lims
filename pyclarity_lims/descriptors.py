@@ -5,6 +5,7 @@ Entities and their descriptors for the LIMS interface.
 Per Kraulis, Science for Life Laboratory, Stockholm, Sweden.
 Copyright (C) 2012 Per Kraulis
 """
+from decimal import Decimal
 
 from pyclarity_lims.constants import nsmap
 
@@ -36,8 +37,8 @@ class Nestable(XmlElement):
         else:
             self.rootkeys = []
 
-    def rootnode(self, instance):
-        _rootnode = instance.root
+    def rootnode_from_root(self, root):
+        _rootnode = root
         for rootkey in self.rootkeys:
             childnode = _rootnode.find(rootkey)
             if childnode is None:
@@ -45,6 +46,9 @@ class Nestable(XmlElement):
                 _rootnode.append(childnode)
             _rootnode = childnode
         return _rootnode
+
+    def rootnode(self, instance):
+        return self.rootnode_from_root(instance.root)
 
 
 class XmlMutable(XmlElement):
@@ -172,7 +176,7 @@ class UdfDictionary(Nestable, XmlDictionary):
                 if not self._is_string(value):
                     raise TypeError('Text UDF requires str or unicode value')
             elif vtype == 'numeric':
-                if not isinstance(value, (int, float)):
+                if not isinstance(value, (int, float, Decimal)):
                     raise TypeError('Numeric UDF requires int or float value')
                 value = str(value)
             elif vtype == 'boolean':
@@ -200,7 +204,7 @@ class UdfDictionary(Nestable, XmlDictionary):
             elif isinstance(value, bool):
                 vtype = 'Boolean'
                 value = value and 'true' or 'false'
-            elif isinstance(value, (int, float)):
+            elif isinstance(value, (int, float, Decimal)):
                 vtype = 'Numeric'
                 value = str(value)
             elif isinstance(value, datetime.date):
@@ -765,6 +769,16 @@ class QueuedArtifactList(TagXmlList):
                 queue_date = datetime.datetime.strptime(qt, date_format)
         list.append(self, (input_art, queue_date, location))
 
+    def _update_elems(self):
+        root = self.instance.root
+        self._elems = []
+        while root:
+            self._elems += self.rootnode_from_root(root).findall(self.tag)
+            if root.find('next-page') is not None:
+                root = self.instance.lims.get(root.find('next-page').attrib.get('uri'))
+            else:
+                root = None
+
 
 # Descriptors: This section contains the objects that can be used in entities
 class BaseDescriptor(XmlElement):
@@ -884,6 +898,8 @@ class EntityDescriptor(TagDescriptor):
             node = ElementTree.Element(self.tag)
             self.rootnode(instance).append(node)
         node.attrib['uri'] = value.uri
+        # if value._TAG in ['project', 'sample', 'artifact', 'container']:
+        #     node.attrib['limsid'] = value.id
 
 
 class DimensionDescriptor(TagDescriptor):
