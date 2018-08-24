@@ -200,6 +200,9 @@ class Note(Entity):
 class File(Entity):
     """File attached to a project or a sample."""
 
+    _URI = 'files'
+    _PREFIX = 'file'
+
     attached_to = StringDescriptor('attached-to')
     """The uri of the Entity this file is attached to"""
     content_location = StringDescriptor('content-location')
@@ -379,7 +382,7 @@ class Process(Entity):
     _CREATION_PREFIX = 'prx'
 
     type = EntityDescriptor('type', Processtype)
-    """The :py:class:`type <pyclarity_lims.entities.ProcessType>` of the process"""
+    """The :py:class:`type <pyclarity_lims.entities.Processtype>` of the process"""
     date_run = StringDescriptor('date-run')
     """The date at which the process was finished in format Year-Month-Day i.e. 2016-12-05."""
     technician = EntityDescriptor('technician', Researcher)
@@ -407,7 +410,10 @@ class Process(Entity):
 
     """
     udf = UdfDictionaryDescriptor()
-    """Dictionary of UDFs associated with the process."""
+    """Dictionary of UDFs associated with the process. 
+    
+    Note that the UDFs cannot be modify in Process. Use :py:class:`Step details <pyclarity_lims.entities.StepDetails>`
+    to modify UDFs instead. You can access them with process.step.details.udf"""
     udt = UdtDictionaryDescriptor()
     """Dictionary of UDTs associated with the process."""
     files = EntityListDescriptor(nsmap('file:file'), File)
@@ -420,13 +426,17 @@ class Process(Entity):
     def outputs_per_input(self, inart, ResultFile=False, SharedResultFile=False, Analyte=False):
         """Getting all the output artifacts related to a particular input artifact
 
-        :param inart: input artifact id use to select the output
+        :param inart: input artifact id or artifact entity use to select the output
         :param ResultFile: boolean specifying to only return ResultFiles.
         :param SharedResultFile: boolean specifying to only return SharedResultFiles.
         :param Analyte: boolean specifying to only return Analytes.
         :return: output artifact corresponding to the input artifact provided
         """
-        inouts = [io for io in self.input_output_maps if io[0]['limsid'] == inart]
+        if isinstance(Artifact, inart):
+            inouts = [io for io in self.input_output_maps if io[0]['uri'] == inart]
+        else:
+            inouts = [io for io in self.input_output_maps if io[0]['limsid'] == inart]
+
         if ResultFile:
             inouts = [io for io in inouts if io[1]['output-type'] == 'ResultFile']
         elif SharedResultFile:
@@ -490,15 +500,38 @@ class Process(Entity):
         else:
             return [Artifact(self.lims, id=id) for id in ids if id is not None]
 
-    def shared_result_files(self):
-        """Retrieve all resultfiles of output-generation-type PerAllInputs."""
-        artifacts = self.all_outputs(unique=True)
-        return [a for a in artifacts if a.output_type == 'SharedResultFile']
+    def _output_files(self, resfile, output_generation_type):
+        if output_generation_type:
+            artifacts = [
+                io[1]['uri'] for io in self.input_output_maps
+                if io[1] is not None
+                and io[1]['output-type'] == resfile
+                and io[1]['output-generation-type'] == output_generation_type
+            ]
+        else:
+            artifacts = [
+                io[1]['uri'] for io in self.input_output_maps
+                if io[1] is not None and io[1]['output-type'] == resfile
+            ]
+        return list(set(artifacts))
 
-    def result_files(self):
-        """Retrieve all resultfiles of output-generation-type perInput."""
-        artifacts = self.all_outputs(unique=True)
-        return [a for a in artifacts if a.output_type == 'ResultFile']
+    def shared_result_files(self, output_generation_type=None):
+        """Retrieve all output artifacts where output-type is SharedResultFile.
+
+        :param output_generation_type: string specifying the output-generation-type (PerAllInputs or PerInput)
+        :return: list of output artifacts.
+
+        """
+        return self._output_files('SharedResultFile', output_generation_type)
+
+    def result_files(self, output_generation_type=None):
+        """Retrieve all output artifacts where output-type is ResultFile.
+
+        :param output_generation_type: string specifying the output-generation-type (PerAllInputs or PerInput)
+        :return: list of output artifacts.
+
+        """
+        return self._output_files('ResultFile', output_generation_type)
 
     def analytes(self):
         """Retrieving the output Analytes of the process, if existing.
