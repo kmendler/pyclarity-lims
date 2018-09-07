@@ -804,6 +804,7 @@ class StepPools(Entity):
 
     def put(self):
         self.root = super(StepPools, self).put()
+        return self.root
 
 
 class Step(Entity):
