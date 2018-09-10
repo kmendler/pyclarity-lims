@@ -403,7 +403,8 @@ class XmlPooledInputDict(XmlDictionary, Nestable):
         self._delitem(key)
         node = ElementTree.SubElement(self.rootnode(self.instance), 'pool')
         node.attrib['name'] = key
-        node.attrib['uri'] = pool.uri
+        if pool and pool.uri:
+            node.attrib['output-uri'] = pool.uri
         for inart in list_input:
             sub = ElementTree.Element('input')
             sub.attrib['uri'] = inart.uri
@@ -417,11 +418,15 @@ class XmlPooledInputDict(XmlDictionary, Nestable):
 
     def _parse_element(self, element, **kwargs):
         from pyclarity_lims.entities import Artifact
+        if 'output-uri' in element.attrib:
+            pool = Artifact(self.instance.lims, uri=element.attrib.get('output-uri'))
+        else:
+            pool = None
         dict.__setitem__(
             self,
             element.attrib.get('name'),
             (
-                Artifact(self.instance.lims, uri=element.attrib.get('output-uri')),
+                pool,
                 tuple(Artifact(self.instance.lims, uri=sub.attrib.get('uri')) for sub in element.findall('input'))
             )
         )
