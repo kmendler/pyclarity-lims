@@ -1,10 +1,16 @@
 Changelog for Pyclarity-Lims
 ============================
 
-0.4.4 (unreleased)
+0.4.4 (2018-09-10)
 ------------------
 
-- Nothing changed yet.
+- Pools can now be created in the `StepPools` entity  
+- `Queue` can now return paginated artifact list
+- Add nb_page argument to Search function such as `lims.get_samples(nb_page=1)`
+- Documentation improvments 
+- Add missing `.get` in `Step.advance()`
+- Fix future warning in `Step.available_programs` (dbarrell)
+- Other minor bug fixes
 
 
 0.4.3 (2018-02-07)
