@@ -1,6 +1,12 @@
 Changelog for Pyclarity-Lims
 ============================
 
+0.4.5 (unreleased)
+------------------
+
+- Nothing changed yet.
+
+
 0.4.4 (2018-09-10)
 ------------------
 
