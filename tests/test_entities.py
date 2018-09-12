@@ -481,3 +481,13 @@ class TestProcess(TestEntities):
             assert len(p.result_files()) == 3
             assert len(p.result_files(output_generation_type='PerAllInputs')) == 1
             assert len(p.result_files(output_generation_type='PerInput')) == 2
+
+    def test_outputs_per_input(self):
+        p = Process(uri=self.lims.get_uri('processes', 'p2'), lims=self.lims)
+        with patch('requests.Session.get', return_value=Mock(content=self.process_xml, status_code=200)):
+            outputs = [Artifact(self.lims, id='ao1'), Artifact(self.lims, id='ao2')]
+            assert p.outputs_per_input('a1') == outputs
+            assert p.outputs_per_input(Artifact(self.lims, id='a1')) == outputs
+            assert p.outputs_per_input('a1', ResultFile=True) == outputs
+            assert p.outputs_per_input('a1', SharedResultFile=True) == []
+            assert p.outputs_per_input('a1', Analyte=True) == []
