@@ -491,3 +491,18 @@ class TestProcess(TestEntities):
             assert p.outputs_per_input('a1', ResultFile=True) == outputs
             assert p.outputs_per_input('a1', SharedResultFile=True) == []
             assert p.outputs_per_input('a1', Analyte=True) == []
+
+    def test_input_per_sample(self):
+        p = Process(uri=self.lims.get_uri('processes', 'p2'), lims=self.lims)
+        art1 = Mock(samples=[NamedMock(real_name='s1')])
+        art2 = Mock(samples=[NamedMock(real_name='s2')])
+        with patch.object(Process, 'all_inputs', return_value=[art1, art2]):
+            assert p.input_per_sample('s1') == [art1]
+
+    def test_all_inputs(self):
+        p = Process(uri=self.lims.get_uri('processes', 'p2'), lims=self.lims)
+        with patch('requests.Session.get', return_value=Mock(content=self.process_xml, status_code=200)):
+            inputs = [Artifact(self.lims, id='a1'), Artifact(self.lims, id='a2')]
+            sorted(p.all_inputs(), key=lambda x: x.id) == inputs
+
+
