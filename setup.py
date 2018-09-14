@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 requirements_txt = join(abspath(dirname(__file__)), 'requirements.txt')
 requirements = [l.strip() for l in open(requirements_txt) if l and not l.startswith('#')]
 
-version = '0.4.5.dev0'
+version = '0.4.5'
 
 
 setup(

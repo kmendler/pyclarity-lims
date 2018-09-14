@@ -1,10 +1,11 @@
 Changelog for Pyclarity-Lims
 ============================
 
-0.4.5 (unreleased)
+0.4.5 (2018-09-14)
 ------------------
 
-- Nothing changed yet.
+- Fixed bug in Process.outputs_per_input
+- Additional tests for Process inputs/outputs
 
 
 0.4.4 (2018-09-10)
