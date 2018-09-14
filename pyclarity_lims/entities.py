@@ -432,7 +432,7 @@ class Process(Entity):
         :param Analyte: boolean specifying to only return Analytes.
         :return: output artifact corresponding to the input artifact provided
         """
-        if isinstance(Artifact, inart):
+        if isinstance(inart, Artifact):
             inouts = [io for io in self.input_output_maps if io[0]['uri'] == inart]
         else:
             inouts = [io for io in self.input_output_maps if io[0]['limsid'] == inart]
