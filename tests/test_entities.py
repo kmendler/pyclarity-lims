@@ -503,6 +503,12 @@ class TestProcess(TestEntities):
         p = Process(uri=self.lims.get_uri('processes', 'p2'), lims=self.lims)
         with patch('requests.Session.get', return_value=Mock(content=self.process_xml, status_code=200)):
             inputs = [Artifact(self.lims, id='a1'), Artifact(self.lims, id='a2')]
-            sorted(p.all_inputs(), key=lambda x: x.id) == inputs
+            assert sorted(p.all_inputs(), key=lambda x: x.id) == inputs
+
+    def test_all_output(self):
+        p = Process(uri=self.lims.get_uri('processes', 'p2'), lims=self.lims)
+        with patch('requests.Session.get', return_value=Mock(content=self.process_xml, status_code=200)):
+            outputs = [Artifact(self.lims, id='ao1'), Artifact(self.lims, id='ao2'), Artifact(self.lims, id='ao3')]
+            assert sorted(p.all_outputs(), key=lambda x: x.id) == outputs
 
 
