@@ -686,7 +686,6 @@ class Lims(object):
         for instance_kwargs in list_kwargs:
             instance = klass.create(self, nopost=True, **instance_kwargs)
             if root is None:
-                klass = instance.__class__
                 # Tag is smp:details, con:details, etc.
                 example_root = instance.root
                 ns_uri = re.match("{(.*)}.*", example_root.tag).group(1)
@@ -697,7 +696,7 @@ class Lims(object):
         data = self.tostring(ElementTree.ElementTree(root))
         root = self.post(uri, data)
         for i, node in enumerate(root.getchildren()):
-            # Rely on the order of the returned elements to set the uri link
+            # Rely on the order of the returned elements to set the uri link which is conserved
             instances[i]._uri = node.attrib['uri']
         return instances
 

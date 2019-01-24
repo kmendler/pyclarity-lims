@@ -119,10 +119,15 @@ class Entity(object):
     @classmethod
     def create(cls, lims, **kwargs):
         """Create an instance from attributes then post it to the LIMS"""
+        post = True
+        if 'nopost' in kwargs:
+            post = False
+            kwargs.pop('nopost')
         instance = cls._create(lims, **kwargs)
         data = lims.tostring(ElementTree.ElementTree(instance.root))
-        instance.root = lims.post(uri=lims.get_uri(cls._URI), data=data)
-        instance._uri = instance.root.attrib['uri']
+        if post:
+            instance.root = lims.post(uri=lims.get_uri(cls._URI), data=data)
+            instance._uri = instance.root.attrib['uri']
         return instance
 
 
