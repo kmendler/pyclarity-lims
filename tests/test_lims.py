@@ -1,8 +1,12 @@
 from unittest import TestCase
+from xml.etree import ElementTree
+
 from requests.exceptions import HTTPError
 
 from pyclarity_lims.entities import Sample, Project, Container
 from pyclarity_lims.lims import Lims
+from tests import elements_equal
+
 try:
     callable(1)
 except NameError:  # callable() doesn't exist in Python 3.0 and 3.1
@@ -128,7 +132,12 @@ class TestLims(TestCase):
         d = ET.SubElement(c, 'd')
         etree = ET.ElementTree(a)
         expected_string = b"""<?xml version='1.0' encoding='utf-8'?>
-<a><b /><c><d /></c></a>"""
+<a>
+<b />
+<c>
+<d />
+</c>
+</a>"""
         string = lims.tostring(etree)
         assert string == expected_string
 
@@ -217,7 +226,7 @@ class TestLims(TestCase):
             <link rel="samples" uri="sample4"/>
             <link rel="samples" uri="sample5"/>
         </ri:links>"""
-        with patch('requests.post', return_value=Mock(content=sample_links, status_code=200)) as mocked_put:
+        with patch('requests.post', return_value=Mock(content=sample_links, status_code=200)) as mocked_post:
             samples = lims.create_batch(
                 Sample,
                 [
@@ -229,3 +238,10 @@ class TestLims(TestCase):
                 ]
             )
             assert [s.uri for s in samples] == ['sample1', 'sample2', 'sample3', 'sample4', 'sample5']
+            assert mocked_post.call_args[0][0] == 'http://testgenologics.com:4040/api/v2/samples/batch/create'
+            et = ElementTree.fromstring(mocked_post.call_args[1]['data'])
+            children = et.getchildren()
+            for i in range(5):
+                assert elements_equal(children[i], samples[i].root)
+
+

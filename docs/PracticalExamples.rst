@@ -175,10 +175,10 @@ as the list of dictionary provided.
         l.create_batch(
             Sample,
             [
-                {'container': c, 'project': p, 'name': 'sampletest1', 'position': 'H:1', 'udf':{'testudf':'testudf_value1'}},
-                {'container': c, 'project': p, 'name': 'sampletest2', 'position': 'H:2', 'udf':{'testudf':'testudf_value2'}},
-                {'container': c, 'project': p, 'name': 'sampletest3', 'position': 'H:3', 'udf':{'testudf':'testudf_value3'}},
-                {'container': c, 'project': p, 'name': 'sampletest4', 'position': 'H:4', 'udf':{'testudf':'testudf_value4'}},
-                {'container': c, 'project': p, 'name': 'sampletest5', 'position': 'H:5', 'udf':{'testudf':'testudf_value4'}}
+                {'container': c, 'project': p, 'name': 'sampletest1', 'position': 'H:1', 'udf':{'testudf': 'testudf_value1'}},
+                {'container': c, 'project': p, 'name': 'sampletest2', 'position': 'H:2', 'udf':{'testudf': 'testudf_value2'}},
+                {'container': c, 'project': p, 'name': 'sampletest3', 'position': 'H:3', 'udf':{'testudf': 'testudf_value3'}},
+                {'container': c, 'project': p, 'name': 'sampletest4', 'position': 'H:4', 'udf':{'testudf': 'testudf_value4'}},
+                {'container': c, 'project': p, 'name': 'sampletest5', 'position': 'H:5', 'udf':{'testudf': 'testudf_value5'}}
             ]
         )

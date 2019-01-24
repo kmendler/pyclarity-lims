@@ -119,10 +119,7 @@ class Entity(object):
     @classmethod
     def create(cls, lims, **kwargs):
         """Create an instance from attributes then post it to the LIMS"""
-        post = True
-        if 'nopost' in kwargs:
-            post = False
-            kwargs.pop('nopost')
+        post = not kwargs.pop('nopost', False)
         instance = cls._create(lims, **kwargs)
         data = lims.tostring(ElementTree.ElementTree(instance.root))
         if post:
@@ -279,10 +276,7 @@ class Sample(Entity):
     @classmethod
     def create(cls, lims, container, position, **kwargs):
         """Create an instance of Sample from attributes then post it to the LIMS"""
-        post = True
-        if 'nopost' in kwargs:
-            post = False
-            kwargs.pop('nopost')
+        post = not kwargs.pop('nopost', False)
         if not isinstance(container, Container):
             raise TypeError('%s is not of type Container' % container)
         instance = super(Sample, cls)._create(lims, **kwargs)
