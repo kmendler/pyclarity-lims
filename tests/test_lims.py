@@ -132,12 +132,7 @@ class TestLims(TestCase):
         d = ET.SubElement(c, 'd')
         etree = ET.ElementTree(a)
         expected_string = b"""<?xml version='1.0' encoding='utf-8'?>
-<a>
-<b />
-<c>
-<d />
-</c>
-</a>"""
+<a><b /><c><d /></c></a>"""
         string = lims.tostring(etree)
         assert string == expected_string
 
