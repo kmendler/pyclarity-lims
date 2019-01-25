@@ -665,6 +665,41 @@ class Lims(object):
         data = self.tostring(ElementTree.ElementTree(root))
         self.post(uri, data)
 
+    def create_batch(self, klass, list_kwargs):
+        """
+        Create using the batch create endpoint. It is only available for Sample and Container entities.
+
+        :param klass: The class to use when creating the entity
+                     (:py:class:`Sample <pyclarity_lims.entities.Sample>` or
+                     :py:class:`Container <pyclarity_lims.entities.Container>`)
+        :param list_kwargs: A list of dictionary where each dictionary will be used to create a instance of the klass.
+                           Elements of the dictionary should match the keyword argument in the create method of
+                           :py:class:`Sample <pyclarity_lims.entities.Sample>` or
+                           :py:class:`Container <pyclarity_lims.entities.Container>`
+        :returns: A list of the created entities in the same order as the list of kwargs.
+        """
+        if klass not in (Sample, Container):
+            raise ValueError("Create batch is only supported for Containers and Samples not %s" % klass)
+        instances = []
+        # XML root element for batch request
+        root = None
+        for instance_kwargs in list_kwargs:
+            instance = klass.create(self, nopost=True, **instance_kwargs)
+            if root is None:
+                # Tag is smp:details, con:details, etc.
+                example_root = instance.root
+                ns_uri = re.match("{(.*)}.*", example_root.tag).group(1)
+                root = ElementTree.Element("{%s}details" % ns_uri)
+            root.append(instance.root)
+            instances.append(instance)
+        uri = self.get_uri(klass._URI, 'batch/create')
+        data = self.tostring(ElementTree.ElementTree(root))
+        root = self.post(uri, data)
+        for i, node in enumerate(root.getchildren()):
+            # Rely on the order of the returned elements to set the uri link which is conserved
+            instances[i]._uri = node.attrib['uri']
+        return instances
+
     def route_artifacts(self, artifact_list, workflow_uri=None, stage_uri=None, unassign=False):
         """
         Take a list of artifacts and queue them to the stage specified by the stage uri. If a workflow uri is specified,

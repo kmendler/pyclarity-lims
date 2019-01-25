@@ -119,10 +119,12 @@ class Entity(object):
     @classmethod
     def create(cls, lims, **kwargs):
         """Create an instance from attributes then post it to the LIMS"""
+        post = not kwargs.pop('nopost', False)
         instance = cls._create(lims, **kwargs)
         data = lims.tostring(ElementTree.ElementTree(instance.root))
-        instance.root = lims.post(uri=lims.get_uri(cls._URI), data=data)
-        instance._uri = instance.root.attrib['uri']
+        if post:
+            instance.root = lims.post(uri=lims.get_uri(cls._URI), data=data)
+            instance._uri = instance.root.attrib['uri']
         return instance
 
 
@@ -274,6 +276,7 @@ class Sample(Entity):
     @classmethod
     def create(cls, lims, container, position, **kwargs):
         """Create an instance of Sample from attributes then post it to the LIMS"""
+        post = not kwargs.pop('nopost', False)
         if not isinstance(container, Container):
             raise TypeError('%s is not of type Container' % container)
         instance = super(Sample, cls)._create(lims, **kwargs)
@@ -283,8 +286,9 @@ class Sample(Entity):
         position_element = ElementTree.SubElement(location, 'value')
         position_element.text = position
         data = lims.tostring(ElementTree.ElementTree(instance.root))
-        instance.root = lims.post(uri=lims.get_uri(cls._URI), data=data)
-        instance._uri = instance.root.attrib['uri']
+        if post:
+            instance.root = lims.post(uri=lims.get_uri(cls._URI), data=data)
+            instance._uri = instance.root.attrib['uri']
         return instance
 
 

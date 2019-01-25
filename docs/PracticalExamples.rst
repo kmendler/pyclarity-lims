@@ -68,6 +68,8 @@ when the data in the LIMS is changing rapidly, like the status of a running prog
 The function :py:func:`get <pyclarity_lims.entities.Entity.get>` is most of the time used implicitly
 but can be used explicitly with the force option to bypass the cache and retrieve an up-to-date version of the instance.
 
+.. _create-sample:
+
 Create sample with a Specific udfs
 ----------------------------------
 
@@ -155,3 +157,28 @@ need to provide the pool name and we need to provide `None` in place of the pool
 
         # Now we can advance the step
         s.advance()
+
+
+Creating large number of Samples with create_batch
+--------------------------------------------------
+
+We have already seen that you can create sample in :ref:`create-sample`. But when you need to create a
+large number of samples, this method can be quite slow. The function
+:py:func:`create_batch <pyclarity_lims.lims.Lims.create_batch>` can create multiple samples (or containers) in a single
+query. You'll need to specify the Entity you wish to create and the parameters you would have passed to the create
+method as one dictionary for each entity to create. The function returns the list of created entity in the same order
+as the list of dictionary provided.
+
+.. code::
+
+        # Assuming the Container c and the Project p exists.
+        l.create_batch(
+            Sample,
+            [
+                {'container': c, 'project': p, 'name': 'sampletest1', 'position': 'H:1', 'udf':{'testudf': 'testudf_value1'}},
+                {'container': c, 'project': p, 'name': 'sampletest2', 'position': 'H:2', 'udf':{'testudf': 'testudf_value2'}},
+                {'container': c, 'project': p, 'name': 'sampletest3', 'position': 'H:3', 'udf':{'testudf': 'testudf_value3'}},
+                {'container': c, 'project': p, 'name': 'sampletest4', 'position': 'H:4', 'udf':{'testudf': 'testudf_value4'}},
+                {'container': c, 'project': p, 'name': 'sampletest5', 'position': 'H:5', 'udf':{'testudf': 'testudf_value5'}}
+            ]
+        )

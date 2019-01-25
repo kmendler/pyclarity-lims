@@ -1,8 +1,12 @@
 from unittest import TestCase
+from xml.etree import ElementTree
+
 from requests.exceptions import HTTPError
 
-from pyclarity_lims.entities import Sample
+from pyclarity_lims.entities import Sample, Project, Container
 from pyclarity_lims.lims import Lims
+from tests import elements_equal
+
 try:
     callable(1)
 except NameError:  # callable() doesn't exist in Python 3.0 and 3.1
@@ -204,4 +208,35 @@ class TestLims(TestCase):
             samples = lims._get_instances(Sample, nb_pages=-1)
             assert len(samples) == 6
             assert mget.call_count == 3
+
+    def test_create_batch(self):
+        lims = Lims(self.url, username=self.username, password=self.password)
+        p = Project(lims, uri='project')
+        c = Container(lims, uri='container')
+        sample_links = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <ri:links xmlns:ri="http://genologics.com/ri">
+            <link rel="samples" uri="sample1"/>
+            <link rel="samples" uri="sample2"/>
+            <link rel="samples" uri="sample3"/>
+            <link rel="samples" uri="sample4"/>
+            <link rel="samples" uri="sample5"/>
+        </ri:links>"""
+        with patch('requests.post', return_value=Mock(content=sample_links, status_code=200)) as mocked_post:
+            samples = lims.create_batch(
+                Sample,
+                [
+                    {'project': p, 'container': c, 'position': '1:1', 'name': 's1', 'udf': {'test1': 'test1value1'}},
+                    {'project': p, 'container': c, 'position': '1:2', 'name': 's2', 'udf': {'test1': 'test1value2'}},
+                    {'project': p, 'container': c, 'position': '1:3', 'name': 's3', 'udf': {'test1': 'test1value3'}},
+                    {'project': p, 'container': c, 'position': '1:4', 'name': 's4', 'udf': {'test1': 'test1value4'}},
+                    {'project': p, 'container': c, 'position': '1:5', 'name': 's5', 'udf': {'test1': 'test1value5'}},
+                ]
+            )
+            assert [s.uri for s in samples] == ['sample1', 'sample2', 'sample3', 'sample4', 'sample5']
+            assert mocked_post.call_args[0][0] == 'http://testgenologics.com:4040/api/v2/samples/batch/create'
+            et = ElementTree.fromstring(mocked_post.call_args[1]['data'])
+            children = et.getchildren()
+            for i in range(5):
+                assert elements_equal(children[i], samples[i].root)
+
 
