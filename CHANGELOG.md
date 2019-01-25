@@ -1,10 +1,10 @@
 Changelog for Pyclarity-Lims
 ============================
 
-0.4.6 (unreleased)
+0.4.6 (2019-01-25)
 ------------------
 
-- Nothing changed yet.
+- New function for creating Samples and Container vi batch query 
 
 
 0.4.5 (2018-09-14)
