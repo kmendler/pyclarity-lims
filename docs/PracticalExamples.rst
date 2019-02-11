@@ -172,7 +172,7 @@ as the list of dictionary provided.
 .. code::
 
         # Assuming the Container c and the Project p exists.
-        l.create_batch(
+        samples = l.create_batch(
             Sample,
             [
                 {'container': c, 'project': p, 'name': 'sampletest1', 'position': 'H:1', 'udf':{'testudf': 'testudf_value1'}},
@@ -182,3 +182,16 @@ as the list of dictionary provided.
                 {'container': c, 'project': p, 'name': 'sampletest5', 'position': 'H:5', 'udf':{'testudf': 'testudf_value5'}}
             ]
         )
+
+.. warning::
+   The create_batch function returns entities already created with all attributes specified during the
+   creation populated. However it does not include attributes created on the LIMS side such as the artifact of samples.
+   These have to be retrieved manually using :py:func:`sample.get(force=True) <pyclarity_lims.entities.Entity.get>`
+   or :py:func:`lims.get_batch(samples, force=True) <pyclarity_lims.lims.Lims.get_batch>`
+
+.. code::
+
+        # After creation of the samples above
+        samples[0].artifact           # returns None
+        samples[0].get(force=True)    # retrieve the attribute as they are on the LIMS
+        samples[0].artifact           # returns Artifact(uri=...)

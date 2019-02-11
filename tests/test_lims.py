@@ -150,6 +150,9 @@ class TestLims(TestCase):
         assert lims.request_session.get.return_value.encoding == 'utf-16'
         lims.request_session.get.assert_called_with(exp_url, auth=(self.username, self.password), timeout=16)
 
+        lims.request_session = Mock(get=Mock(return_value=Mock(text='some data\n', content=b'some binary data')))
+        assert lims.get_file_contents(uri=self.url + '/api/v2/files/an_id', binary=True) == b'some binary data'
+
     def test_get_instances(self):
         lims = Lims(self.url, username=self.username, password=self.password)
         sample_xml_template = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
