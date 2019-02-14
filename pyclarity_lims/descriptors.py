@@ -664,15 +664,39 @@ class XmlInputOutputMapList(TagXmlList):
                 result[key] = node.attrib[key]
             except KeyError:
                 pass
-            for uri in ['uri', 'post-process-uri']:
-                try:
-                    result[uri] = Artifact(lims, uri=node.attrib[uri])
-                except KeyError:
-                    pass
+        for uri in ['uri', 'post-process-uri']:
+            try:
+                result[uri] = Artifact(lims, uri=node.attrib[uri])
+            except KeyError:
+                pass
         node = node.find('parent-process')
         if node is not None:
             result['parent-process'] = Process(lims, node.attrib['uri'])
         return result
+
+    def _set_dict(self, element, value_dict):
+        for key in ['limsid', 'output-type', 'output-generation-type']:
+            if key in value_dict:
+                element.attrib[key] = value_dict[key]
+        for key in ['uri', 'post-process-uri']:
+            if key in value_dict:
+                element.attrib[key] = value_dict[key].uri
+        if 'parent-process' in value_dict:
+            node = ElementTree.SubElement(element, 'parent-process')
+            node.attrib['uri'] = value_dict['parent-process'].uri
+
+    def _create_new_node(self, value ):
+        if not isinstance(value, tuple):
+            raise TypeError('You need to provide a tuple not %s' % (type(value)))
+        if len(value) != 2:
+            raise TypeError('You need to provide a tuple with 2 values, found %s' % len(value))
+        input_dict, output_dict = value
+        node = ElementTree.Element(self.tag)
+        input_element = ElementTree.SubElement(node, 'input')
+        output_element = ElementTree.SubElement(node, 'output')
+        self._set_dict(input_element, input_dict)
+        self._set_dict(output_element, output_dict)
+        return node
 
 
 class OutputPlacementList(TagXmlList):
