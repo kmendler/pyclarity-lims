@@ -95,8 +95,17 @@ class Lims(object):
         else:
             return self.parse_response(r)
 
-    def get_file_contents(self, id=None, uri=None, encoding=None, crlf=False):
-        """Returns the contents of the file of <ID> or <uri>"""
+    def get_file_contents(self, id=None, uri=None, encoding=None, crlf=False, binary=False):
+        r"""
+        Download and returns the contents of the file of <ID> or <uri>.
+
+        :param id: the id of the file to retrieve.
+        :param uri: the uri of the file to retrieve.
+        :param encoding: When retrieve text file, this option can specify the encoding of the file.
+        :param crlf: When set to True the text file will be replace \\r\\n by \\n.
+        :param binary: When set to True the file content is returned as a binary stream.
+        :return: The file content in the format specify by the parameters.
+        """
         if id:
             url = self.get_uri('files', id, 'download')
         elif uri:
@@ -106,6 +115,8 @@ class Lims(object):
 
         r = self.request_session.get(url, auth=(self.username, self.password), timeout=TIMEOUT)
         self.validate_response(r)
+        if binary:
+            return r.content
         if encoding:
             r.encoding = encoding
 
@@ -637,7 +648,7 @@ class Lims(object):
             for node in root.getchildren():
                 instance = instance_map[node.attrib['limsid']]
                 instance.root = node
-        return instance_map.values()
+        return instances
 
     def put_batch(self, instances):
         """

@@ -3,7 +3,7 @@ from xml.etree import ElementTree
 
 from requests.exceptions import HTTPError
 
-from pyclarity_lims.entities import Sample, Project, Container
+from pyclarity_lims.entities import Sample, Project, Container, Artifact
 from pyclarity_lims.lims import Lims
 from tests import elements_equal
 
@@ -150,6 +150,9 @@ class TestLims(TestCase):
         assert lims.request_session.get.return_value.encoding == 'utf-16'
         lims.request_session.get.assert_called_with(exp_url, auth=(self.username, self.password), timeout=16)
 
+        lims.request_session = Mock(get=Mock(return_value=Mock(text='some data\n', content=b'some binary data')))
+        assert lims.get_file_contents(uri=self.url + '/api/v2/files/an_id', binary=True) == b'some binary data'
+
     def test_get_instances(self):
         lims = Lims(self.url, username=self.username, password=self.password)
         sample_xml_template = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -208,6 +211,32 @@ class TestLims(TestCase):
             samples = lims._get_instances(Sample, nb_pages=-1)
             assert len(samples) == 6
             assert mget.call_count == 3
+
+    def test_get_batch(self):
+        lims = Lims(self.url, username=self.username, password=self.password)
+        arts = [Artifact(lims, id='a1'), Artifact(lims, id='a2')]
+        artifact_list = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <art:details xmlns:art="http://genologics.com/ri/artifact">
+          <art:artifact limsid="a1" uri="{url}/artifacts/a1">
+            <name>art1</name>
+            <type>type1</type>
+          </art:artifact>
+          <art:artifact limsid="a2" uri="{url}/artifacts/a2">
+            <name>art2</name>
+            <type>type2</type>
+          </art:artifact>
+        </art:details>
+        '''
+        with patch('requests.post', return_value=Mock(content=artifact_list, status_code=200)) as mocked_post:
+            arts = lims.get_batch(arts)
+            assert type(arts) == list
+            assert arts[0].name == 'art1'
+            assert arts[1].name == 'art2'
+            mocked_post.assert_called_once_with(
+                'http://testgenologics.com:4040/api/v2/artifacts/batch/retrieve',
+                auth=('test', 'password'),
+                data=b'<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<ri:links xmlns:ri="http://genologics.com/ri"><link rel="artifacts" uri="http://testgenologics.com:4040/api/v2/artifacts/a1" /><link rel="artifacts" uri="http://testgenologics.com:4040/api/v2/artifacts/a2" /></ri:links>',
+                headers={'content-type': 'application/xml', 'accept': 'application/xml'}, params={})
 
     def test_create_batch(self):
         lims = Lims(self.url, username=self.username, password=self.password)
