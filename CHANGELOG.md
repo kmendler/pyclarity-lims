@@ -1,11 +1,12 @@
 Changelog for Pyclarity-Lims
 ============================
 
-0.4.7 (unreleased)
+0.4.7 (2019-02-19)
 ------------------
 
-- Nothing changed yet.
-
+- Fix for get_batch return type now return list consistently.
+- New option for lims.get_file_content to allow retrieval of binary stream
+- Ability to create/add to input-output-maps (useful in testing)
 
 0.4.6 (2019-01-25)
 ------------------
