@@ -11,7 +11,7 @@ from pyclarity_lims.descriptors import StringDescriptor, StringAttributeDescript
     StringDictionaryDescriptor, IntegerDescriptor, BooleanDescriptor, UdfDictionary, EntityDescriptor, \
     InputOutputMapList, EntityListDescriptor, PlacementDictionary, EntityList, SubTagDictionary, ExternalidList,\
     XmlElementAttributeDict, XmlAttributeList, XmlReagentLabelList, XmlPooledInputDict, XmlAction, QueuedArtifactList
-from pyclarity_lims.entities import Artifact, ProtocolStep, Container
+from pyclarity_lims.entities import Artifact, ProtocolStep, Container, Process
 from pyclarity_lims.lims import Lims
 from tests import elements_equal
 
@@ -662,6 +662,26 @@ class TestInputOutputMapList(TestCase):
         res = self.IO_map.__get__(self.instance1, None)
         assert sorted(res[0][0].keys()) == sorted(expected_keys_input)
         assert sorted(res[0][1].keys()) == sorted(expected_keys_ouput)
+
+    def test_create(self):
+        et = ElementTree.fromstring("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <test-entry xmlns:udf="http://genologics.com/ri/userdefined">
+        </test-entry>""")
+        lims = Mock(cache={})
+        instance = Mock(root=et, lims=lims)
+        res = self.IO_map.__get__(instance, None)
+        input_dict = {'uri': Artifact(lims, uri='input_uri'), 'limsid': 'a1', 'parent-process': Process(lims, uri='p_uri')}
+        output_dict = {'uri': Artifact(lims, uri='output_uri'), 'limsid': 'a2', 'output-type': 'PerInput'}
+        res.append((input_dict, output_dict))
+        assert len(et) == 1
+        node = et.find('input-output-map')
+        assert len(node) == 2  # input and output
+        assert node.find('input').attrib['uri'] == 'input_uri'
+        assert node.find('input').attrib['limsid'] == 'a1'
+        assert node.find('input').find('parent-process').attrib['uri'] == 'p_uri'
+        assert node.find('output').attrib['uri'] == 'output_uri'
+        assert node.find('output').attrib['limsid'] == 'a2'
+        assert node.find('output').attrib['output-type'] == 'PerInput'
 
 
 class TestExternalidList(TestCase):
