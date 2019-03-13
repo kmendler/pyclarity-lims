@@ -284,7 +284,7 @@ class XmlAction(XmlElementAttributeDict):
             if k == 'artifact-uri':
                 k = 'artifact'
                 v = Artifact(self.instance.lims, uri=v)
-            elif k in ('step-uri', 'rework-step-uri'):
+            elif k == 'step-uri':
                 k = k[:-(len('-uri'))]
                 v = ProtocolStep(self.instance.lims, uri=v)
             elif k == 'rework-step-uri':
