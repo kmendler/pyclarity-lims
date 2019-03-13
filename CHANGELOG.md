@@ -1,10 +1,10 @@
 Changelog for Pyclarity-Lims
 ============================
 
-0.4.8 (unreleased)
+0.4.8 (2019-03-13)
 ------------------
 
-- Nothing changed yet.
+- Fix rework-step in next-action that had to be set to A Step instead of a ProtocolStep 
 
 
 0.4.7 (2019-02-19)
