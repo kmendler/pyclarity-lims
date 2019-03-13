@@ -11,7 +11,7 @@ from pyclarity_lims.descriptors import StringDescriptor, StringAttributeDescript
     StringDictionaryDescriptor, IntegerDescriptor, BooleanDescriptor, UdfDictionary, EntityDescriptor, \
     InputOutputMapList, EntityListDescriptor, PlacementDictionary, EntityList, SubTagDictionary, ExternalidList,\
     XmlElementAttributeDict, XmlAttributeList, XmlReagentLabelList, XmlPooledInputDict, XmlAction, QueuedArtifactList
-from pyclarity_lims.entities import Artifact, ProtocolStep, Container, Process
+from pyclarity_lims.entities import Artifact, ProtocolStep, Container, Process, Step
 from pyclarity_lims.lims import Lims
 from tests import elements_equal
 
@@ -780,7 +780,7 @@ class TestXmlAction(TestCase):
     def setUp(self):
         et = ElementTree.fromstring('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
                 <test-entry>
-                <next-action step-uri="{url}/prt/1/stp/1" action="nextstep" artifact-uri="{url}/arts/a1"/>
+                <next-action step-uri="{url}/prt/1/stp/1" rework-step-uri="{url}/steps/1" action="nextstep" artifact-uri="{url}/arts/a1"/>
                 </test-entry>'''.format(url='http://testgenologics.com:4040'))
 
         et1 = ElementTree.fromstring('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -797,6 +797,7 @@ class TestXmlAction(TestCase):
         assert action['action'] == 'nextstep'
         assert action['step'] == ProtocolStep(self.lims, uri='http://testgenologics.com:4040/prt/1/stp/1')
         assert action['artifact'] == Artifact(self.lims, uri='http://testgenologics.com:4040/arts/a1')
+        assert action['rework-step'] == Step(self.lims, uri='http://testgenologics.com:4040/steps/1')
 
     def test_set(self):
         action = XmlAction(self.instance_empty, tag='next-action')
@@ -804,6 +805,8 @@ class TestXmlAction(TestCase):
         assert action.instance.root.find('next-action').attrib['step-uri'] == 'http://testgenologics.com:4040/prt/1/stp/1'
         action['action'] = 'nextstep'
         assert action.instance.root.find('next-action').attrib['action'] == 'nextstep'
+        action['rework-step'] = Step(self.lims, uri='http://testgenologics.com:4040/steps/1')
+        assert action.instance.root.find('next-action').attrib['rework-step-uri'] == 'http://testgenologics.com:4040/steps/1'
 
         with pytest.raises(KeyError):
             action['whatever'] = 'youwant'
