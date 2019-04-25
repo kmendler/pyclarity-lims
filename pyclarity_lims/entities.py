@@ -1027,6 +1027,11 @@ class ProtocolStep(Entity):
     """List of dicts describing the EPP trigger attached to this step."""
 
     @property
+    def protocol(self):
+        """The protocol associated with the step."""
+        return Protocol(self.lims, self.root.attrib['protocol-uri'])
+
+    @property
     def queue(self):
         """The queue associated with this protocol step. The link is possible because they share the same id."""
         return Queue(self.lims, id=self.id)
