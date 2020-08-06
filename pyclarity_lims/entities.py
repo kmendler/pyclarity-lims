@@ -1078,6 +1078,8 @@ class ReagentType(Entity):
     _TAG = "reagent-type"
     _PREFIX = 'rtp'
 
+    name = StringAttributeDescriptor("name")
+    """Name of the reagent type."""
     category = StringDescriptor('reagent-category')
     """Reagent category associated with the type"""
 
