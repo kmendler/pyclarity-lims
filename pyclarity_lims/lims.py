@@ -91,7 +91,7 @@ class Lims(object):
                                          headers=dict(accept='application/xml'),
                                          timeout=TIMEOUT)
         except requests.exceptions.ConnectionError as e:
-            raise type(e)("{0}, Error trying to reach {1}".format(e.message, uri))
+            raise type(e)("{0}, Error trying to reach {1}".format(str(e), uri))
         else:
             return self.parse_response(r)
 
